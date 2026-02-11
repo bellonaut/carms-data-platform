@@ -190,3 +190,100 @@ Why:
 - **Matching algorithm potential:** data model can seed inputs, but no feature engineering/simulation scaffolding yet.
 - **Policy insight potential:** geographic rollups are a starting point; needs longitudinal and scenario layers.
 - **Visualization storytelling:** map is a good demo artifact, but still descriptive rather than decision-grade.
+
+
+## Immediate Action Plan — What to Act On to Get Hired
+
+If the goal is **interview conversion**, focus on actions that create hiring evidence in 2–3 weeks, not broad rewrites.
+
+### 1) Ship a "production-hardening" PR series (highest signal)
+
+Create 4 small PRs instead of one giant rewrite:
+
+1. **Schema governance PR**
+   - Turn Alembic scaffold into real versioned migrations.
+   - Add migration naming convention and rollback notes.
+   - Add one migration that introduces explicit indexes for API filters.
+
+2. **Data quality PR**
+   - Add Dagster asset checks for nulls, duplicates, allowed province values, and row-count deltas.
+   - Fail pipeline when critical checks fail.
+
+3. **API reliability PR**
+   - Add service/repository layer (thin but explicit).
+   - Add structured error responses + request IDs + basic latency logging.
+
+4. **CI/CD PR**
+   - Add GitHub Actions for lint, tests, migration smoke test, and Docker build.
+
+**Hiring impact:** Shows you can close enterprise gaps methodically, which is exactly what teams want in junior hires.
+
+### 2) Add one concrete analytics feature (not just plumbing)
+
+Implement a **"match pressure" feature** from existing data:
+- Province-discipline pressure score = normalized program count + quota proxy.
+- Endpoint: `/analytics/match-pressure` with filters.
+- Add short notebook/report explaining interpretation and caveats.
+
+**Hiring impact:** Proves you can turn platform outputs into decision-support insight.
+
+### 3) Demonstrate performance literacy
+
+- Add indexes on high-use filters (`province`, `discipline_name`, `school_name`).
+- Capture before/after query timings and `EXPLAIN ANALYZE` snapshots in docs.
+- Set explicit API pagination and payload-size limits rationale.
+
+**Hiring impact:** Signals practical data engineering maturity beyond "it runs locally."
+
+### 4) Remove ambiguity in repository structure
+
+- Decide one canonical app path (`carms/` vs `app/`) and deprecate/delete the duplicate tree.
+- Document module ownership and architecture boundaries.
+
+**Hiring impact:** Demonstrates maintainability judgment and team-ready repo hygiene.
+
+### 5) Build a strong interview narrative from the repo
+
+Prepare a 5-minute narrative with evidence:
+- **Problem:** why CaRMS-like data operations need modernization.
+- **Architecture:** bronze/silver/gold + API + orchestration.
+- **Reliability:** checks, migrations, CI.
+- **Value:** one analytics output that supports decision-making.
+- **Next step:** simulation roadmap grounded in current model.
+
+**Hiring impact:** Turns a decent project into a compelling hiring story.
+
+## 30-60-90 Day "Get Hired" Plan
+
+### Next 30 days (must-have)
+- Operational Alembic migrations.
+- 6–10 Dagster data quality checks.
+- CI pipeline with lint/test/build/migration smoke.
+- One analytics endpoint beyond CRUD.
+
+### 60 days (differentiators)
+- Simulation prototype (quota change scenario by province/discipline).
+- Observability baseline (run metrics, API latency, pipeline freshness dashboard).
+- Basic deploy target (ECS or equivalent) with environment separation docs.
+
+### 90 days (interview-winning polish)
+- Decision memo: how this platform supports policy and match operations.
+- Performance report with SLOs and tuning evidence.
+- Demo video + architecture walkthrough for non-technical stakeholders.
+
+## Hiring Manager Checklist You Should Optimize For
+
+Before applying, make sure the repo can clearly answer "yes" to these:
+
+1. Can I run it in under 15 minutes?
+2. Are schema changes controlled and reversible?
+3. Do pipelines fail safely on bad data?
+4. Is there at least one non-trivial analytical output?
+5. Is there evidence of performance tuning?
+6. Is deployment path to AWS believable?
+7. Are tests meaningful, not only smoke checks?
+8. Is ownership clear in code structure?
+9. Can this be presented internally without embarrassment?
+10. Would I trust this candidate with a real migration task?
+
+If you can make 8/10 defensibly true, interview probability increases significantly.
