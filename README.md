@@ -38,8 +38,9 @@ An end-to-end, production-style data platform for the public CaRMS residency pro
 ### Run it in 10 minutes
 1. `cp .env.example .env`
 2. `docker-compose up --build`
-3. Visit Dagster UI `http://localhost:3000` and run job `carms_job` (materializes bronze -> silver -> gold).
-4. Check API docs at `http://localhost:8000/docs` and the map at `http://localhost:8000/map`.
+3. Run migrations: `alembic upgrade head`
+4. Visit Dagster UI `http://localhost:3000` and run job `carms_job` (materializes bronze -> silver -> gold).
+5. Check API docs at `http://localhost:8000/docs` and the map at `http://localhost:8000/map`.
 
 ### Endpoints
 | Method | Path | Purpose | Key params |
@@ -83,6 +84,7 @@ Security and limits (configurable via `.env`):
 
 ### Roadmap
 - Add semantic search over `gold_program_profile` using pgvector and LangChain.
+- Performance notes: [docs/performance.md](docs/performance.md)
 - Schedule Dagster runs with data quality checks and freshness alerts.
 - Deploy a lightweight demo (RDS + ECS/Fargate or Fly) with CI (pytest + ruff).
 

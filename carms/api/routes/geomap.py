@@ -41,7 +41,7 @@ def map_page() -> FileResponse:
 def map_geojson() -> FileResponse:
     # Serve the static GeoJSON used by the choropleth map
     geojson_path = (
-        Path(__file__).resolve().parents[3] / "app" / "static" / "map" / "canada.geojson"
+        Path(__file__).resolve().parents[2] / "static" / "map" / "canada.geojson"
     )
     return FileResponse(str(geojson_path), media_type="application/geo+json")
 

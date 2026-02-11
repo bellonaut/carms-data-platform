@@ -1,6 +1,9 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import AsyncIterator
 
+from alembic import command
+from alembic.config import Config
 from sqlmodel import Session, SQLModel, create_engine
 
 from carms.core.config import Settings
@@ -36,10 +39,22 @@ async def get_session() -> AsyncIterator[Session]:
         session.close()
 
 
+def run_migrations() -> None:
+    """Apply Alembic migrations up to head."""
+    alembic_ini = Path(__file__).resolve().parents[2] / "alembic.ini"
+    if not alembic_ini.exists():
+        raise FileNotFoundError(f"Missing Alembic config: {alembic_ini}")
+
+    config = Config(str(alembic_ini))
+    config.set_main_option("sqlalchemy.url", settings.db_url)
+    command.upgrade(config, "head")
+
+
 def init_db() -> None:
-    """Import models and create tables if they do not exist."""
+    """Initialize database schema using Alembic migrations."""
+    # Import model modules so metadata stays discoverable for autogenerate workflows.
     import carms.models.bronze  # noqa: F401
     import carms.models.silver  # noqa: F401
     import carms.models.gold  # noqa: F401
 
-    SQLModel.metadata.create_all(engine)
+    run_migrations()

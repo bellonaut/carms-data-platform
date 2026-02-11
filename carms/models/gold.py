@@ -9,9 +9,9 @@ class GoldProgramProfile(SQLModel, table=True):
     program_name: str
     program_stream_name: str
     program_stream: str
-    discipline_name: str
-    province: str = "UNKNOWN"
-    school_name: str
+    discipline_name: str = Field(index=True)
+    province: str = Field(default="UNKNOWN", index=True)
+    school_name: str = Field(index=True)
     program_site: str
     program_url: Optional[str] = None
     description_text: Optional[str] = None

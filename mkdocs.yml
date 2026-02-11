@@ -8,6 +8,7 @@ nav:
   - Data Dictionary: data-dictionary.md
   - Insights (HTML): insights.html
   - API Contract: api-contract.md
+  - Performance Notes: performance.md
 markdown_extensions:
   - admonition
   - toc:

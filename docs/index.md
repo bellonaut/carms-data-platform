@@ -5,3 +5,5 @@ This project demonstrates a production-style modernization of the public CaRMS d
 ## Quick Links
 - Architecture: [architecture.md](architecture.md)
 - Data Dictionary: [data-dictionary.md](data-dictionary.md)
+
+- Performance Notes: [performance.md](performance.md)

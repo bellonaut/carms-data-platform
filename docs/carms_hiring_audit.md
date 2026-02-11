@@ -6,7 +6,7 @@
 - **Would this impress a Lead Data Scientist?** **Partially.** It shows initiative and architecture intent, but not enough production depth.
 - **Seniority signal:** **Upper-junior / early-mid** for data platform foundations.
 - **Strongest signal:** End-to-end thinking (Dagster assets, SQLModel entities, FastAPI services, Dockerized local stack).
-- **Biggest red flag:** Data engineering correctness gaps (model/transform mismatch, lack of migrations/governance/index strategy) and duplicate code trees (`app/` and `carms/`) that suggest maintainability risk.
+- **Biggest red flag:** Data engineering correctness gaps (model/transform mismatch, lack of migrations/governance/index strategy) and prior duplicate code trees that previously suggested maintainability risk (now consolidated to `carms/`).
 - **Final verdict:** **Interview-worthy (not strong hire-ready yet).**
 
 ## Phase 2 — Data Engineering Audit
@@ -136,7 +136,7 @@ A Lead Data Scientist at CaRMS would likely focus on:
 3. No asset checks / data quality constraints in Dagster.
 4. No drift detection for changing source columns.
 5. No indexing and performance strategy for API query paths.
-6. Duplicate application trees (`app/` + `carms/`) create ownership ambiguity.
+6. Enforce a single canonical app tree (`carms/`) to avoid ownership ambiguity (completed in this repo).
 7. No formal service/repository abstraction in API.
 8. No CI/CD pipeline with lint/test/build gates.
 9. No deployment narrative for ECS/RDS/S3 with environment separation.
@@ -237,7 +237,7 @@ Implement a **"match pressure" feature** from existing data:
 
 ### 4) Remove ambiguity in repository structure
 
-- Decide one canonical app path (`carms/` vs `app/`) and deprecate/delete the duplicate tree.
+- Keep one canonical app path (`carms/`) and prevent reintroducing duplicate trees.
 - Document module ownership and architecture boundaries.
 
 **Hiring impact:** Demonstrates maintainability judgment and team-ready repo hygiene.
