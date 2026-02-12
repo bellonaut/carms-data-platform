@@ -16,6 +16,13 @@ jupyter: python3
 # Purpose
 Lightweight analytical slices on the public CaRMS program data, matching the gold-layer use cases (geography rollups, discipline mix, description similarity). All code runs locally with the raw extracts; no database required.
 
+# Data at a glance
+- Source: CaRMS public program extract included in this repo (`data/1503_program_master.xlsx`) plus description sections (`1503_program_descriptions_x_section.csv` in the zip).
+- Scope: 815 program streams across 37 disciplines and 18 schools; provinces derived via the same `derive_province` helper used in the pipeline (8 provinces observed).
+- Stream meaning: entries are program streams (CMG, IMG, RoS, etc.), not seat counts. Use caution when inferring capacity.
+- Cycle tag: “1503” corresponds to the extract shipped with this homework repo; no applicant outcomes are included.
+- Missing pieces: no match/offer results, quotas, or applicant metadata, so insights focus on supply-side structure and text content.
+
 # Setup
 ```python
 import sys

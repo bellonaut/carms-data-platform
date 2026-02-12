@@ -83,6 +83,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#purpose" id="toc-purpose" class="nav-link active" data-scroll-target="#purpose">Purpose</a></li>
+  <li><a href="#data-at-a-glance" id="toc-data-at-a-glance" class="nav-link" data-scroll-target="#data-at-a-glance">Data at a glance</a></li>
   <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">Setup</a></li>
   <li><a href="#province-level-program-density" id="toc-province-level-program-density" class="nav-link" data-scroll-target="#province-level-program-density">Province-level program density</a></li>
   <li><a href="#discipline-mix" id="toc-discipline-mix" class="nav-link" data-scroll-target="#discipline-mix">Discipline mix</a></li>
@@ -123,6 +124,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="purpose" class="level1">
 <h1>Purpose</h1>
 <p>Lightweight analytical slices on the public CaRMS program data, matching the gold-layer use cases (geography rollups, discipline mix, description similarity). All code runs locally with the raw extracts; no database required.</p>
+</section>
+<section id="data-at-a-glance" class="level1">
+<h1>Data at a glance</h1>
+<ul>
+<li>Source: CaRMS public program extract included in this repo (<code>data/1503_program_master.xlsx</code>) plus description sections (<code>1503_program_descriptions_x_section.csv</code> in the zip).</li>
+<li>Scope: 815 program streams across 37 disciplines and 18 schools; provinces derived via the same <code>derive_province</code> helper used in the pipeline (8 provinces observed).</li>
+<li>Stream meaning: entries are program streams (CMG, IMG, RoS, etc.), not seat counts. Use caution when inferring capacity.</li>
+<li>Cycle tag: “1503” corresponds to the extract shipped with this homework repo; no applicant outcomes are included.</li>
+<li>Missing pieces: no match/offer results, quotas, or applicant metadata, so insights focus on supply-side structure and text content.</li>
+</ul>
 </section>
 <section id="setup" class="level1">
 <h1>Setup</h1>
