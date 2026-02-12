@@ -1,0 +1,11 @@
+# Lighter dependency set for no-Docker local demo (SQLite).
+sqlmodel
+dagster
+dagster-webserver
+fastapi
+uvicorn
+pandas
+openpyxl
+alembic
+pydantic-settings
+httpx
