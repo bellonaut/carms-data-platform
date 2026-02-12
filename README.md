@@ -36,7 +36,11 @@ An end-to-end, production-style data platform for the public CaRMS residency pro
 - gold_geo_summary — province x discipline rollups with program counts and avg quota.
 
 ### One-click demo (fast path)
-- Docker path (recommended): `make demo`  
+- Docker path (recommended): `make demo`
+- recommend:          winget --version
+                      winget install -e --id GnuWin32.Make
+                      make --version
+
   - Builds images, applies migrations, materializes all assets, waits for health, then opens Dagster UI, API docs, program list, and the map.
 - No-Docker path (SQLite, lighter deps): `make demo-local`  
   - Creates `.venv-demo`, installs `requirements-demo.txt` (no heavy ML deps), runs migrations + assets in SQLite, starts Dagster UI and FastAPI locally, and opens the same pages. Ports 3000/8000 must be free.
