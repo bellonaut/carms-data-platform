@@ -12,6 +12,34 @@ need_cmd() {
     command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"
 }
 
+ensure_env() {
+    if [ -f ".env" ]; then
+        log "Using existing .env"
+        return
+    fi
+
+    if [ -f ".env.example" ]; then
+        log "Creating .env from .env.example"
+        cp .env.example .env
+        return
+    fi
+
+    log "Generating .env with demo-safe defaults (no secrets)"
+    cat > .env <<'EOF'
+POSTGRES_DB=carms
+POSTGRES_USER=carms_app
+POSTGRES_PASSWORD=carms_secret
+DB_URL=postgresql+psycopg2://carms_app:carms_secret@postgres:5432/carms
+ENV=local
+DAGSTER_HOME=/app/.dagster
+API_PORT=8000
+DAGSTER_PORT=3000
+API_KEY=
+RATE_LIMIT_REQUESTS=120
+RATE_LIMIT_WINDOW_SEC=60
+EOF
+}
+
 open_url() {
     local url="$1"
     if command -v open >/dev/null 2>&1; then
@@ -27,9 +55,11 @@ need_cmd docker
 need_cmd docker-compose
 need_cmd python
 
-if [ ! -f ".env" ]; then
-    log "Creating .env from .env.example"
-    cp .env.example .env
+ensure_env
+
+log "Checking Docker availability..."
+if ! docker info >/dev/null 2>&1; then
+    fail "Docker is not running or not reachable. Start Docker Desktop (WSL2 backend on Windows) and retry."
 fi
 
 log "Starting docker-compose (detached, build if needed)..."

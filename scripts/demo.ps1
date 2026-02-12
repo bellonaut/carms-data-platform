@@ -15,13 +15,43 @@ function NeedCmd([string]$cmd) {
     }
 }
 
+function EnsureEnv() {
+    if (Test-Path ".env") {
+        Log "Using existing .env"
+        return
+    }
+    if (Test-Path ".env.example") {
+        Log "Creating .env from .env.example"
+        Copy-Item ".env.example" ".env"
+        return
+    }
+    Log "Generating .env with demo-safe defaults (no secrets)"
+    @"
+POSTGRES_DB=carms
+POSTGRES_USER=carms_app
+POSTGRES_PASSWORD=carms_secret
+DB_URL=postgresql+psycopg2://carms_app:carms_secret@postgres:5432/carms
+ENV=local
+DAGSTER_HOME=/app/.dagster
+API_PORT=8000
+DAGSTER_PORT=3000
+API_KEY=
+RATE_LIMIT_REQUESTS=120
+RATE_LIMIT_WINDOW_SEC=60
+"@ | Out-File -FilePath ".env" -Encoding ascii -Force
+}
+
 NeedCmd docker
 NeedCmd docker-compose
 NeedCmd python
 
-if (-not (Test-Path ".env")) {
-    Log "Creating .env from .env.example"
-    Copy-Item ".env.example" ".env"
+EnsureEnv
+
+Log "Checking Docker availability..."
+try {
+    docker info | Out-Null
+} catch {
+    Fail "Docker is not running or not reachable. Start Docker Desktop (WSL2 backend) and retry."
 }
 
 Log "Starting docker-compose (detached, build if needed)..."
