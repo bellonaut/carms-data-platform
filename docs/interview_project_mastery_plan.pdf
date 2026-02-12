@@ -1,0 +1,533 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Length 1810 >>
+stream
+BT
+/F1 11 Tf
+1 0 0 1 54 738 Tm
+15 TL
+(CARMS PROJECT MASTERY PLAN \(INTERVIEW-FOCUSED\)) Tj
+T*
+() Tj
+T*
+(This guide is designed to help you build **deep, end-to-end ownership** of this project across) Tj
+T*
+(architecture, data, code, runtime behavior, and product/DS extension ideas.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(GOAL AND OUTCOMES) Tj
+T*
+() Tj
+T*
+(By the end of this plan, you should be able to confidently explain:) Tj
+T*
+() Tj
+T*
+(1. **Why the platform exists** and which user problems it solves.) Tj
+T*
+(2. **How data flows** from raw files into API-ready gold tables.) Tj
+T*
+(3. **How one API call is served** from route -> query -> schema -> response.) Tj
+T*
+(4. **How quality, performance, and security are enforced** in practice.) Tj
+T*
+(5. **What you would improve in your first 30 days** as a junior DS/DE.) Tj
+T*
+() Tj
+T*
+(Target total time: **6?9 hours**.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(PHASE A ? CONCEPTUAL UNDERSTANDING \(1?2 HOURS\)) Tj
+T*
+() Tj
+T*
+(STEP A1\) READ README.MD END-TO-END) Tj
+T*
+() Tj
+T*
+(Focus on:) Tj
+T*
+(? Platform intent and scope.) Tj
+T*
+(? Two run modes \(UI-only vs full platform\).) Tj
+T*
+(? Architecture diagram and endpoint surface.) Tj
+T*
+(? Security and rate limiting behaviors.) Tj
+T*
+() Tj
+T*
+(**Output artifact:** a 1-page note titled ?System in 90 seconds? answering:) Tj
+T*
+(? What the system does.) Tj
+T*
+(? Why it uses bronze/silver/gold.) Tj
+T*
+(? Why Dagster + FastAPI + Postgres were selected.) Tj
+T*
+() Tj
+T*
+(STEP A2\) READ DOCS IN THIS EXACT ORDER) Tj
+T*
+() Tj
+T*
+(1. `docs/architecture.md`) Tj
+T*
+(2. `docs/data-dictionary.md`) Tj
+T*
+(3. `docs/api-contract.md`) Tj
+T*
+(4. `docs/performance.md`) Tj
+T*
+() Tj
+T*
+(As you read, maintain a two-column table:) Tj
+T*
+(? **Column A: claim** \(e.g., ?silver standardizes and validates rows?\).) Tj
+ET
+endstream
+endobj
+3 0 obj
+<< /Type /Page /Parent 12 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 2 0 R >>
+endobj
+4 0 obj
+<< /Length 1826 >>
+stream
+BT
+/F1 11 Tf
+1 0 0 1 54 738 Tm
+15 TL
+(? **Column B: where it is implemented** \(file path / function / model\).) Tj
+T*
+() Tj
+T*
+(STEP A3\) WRITE YOUR OWN 8?10 ARCHITECTURE BULLETS) Tj
+T*
+() Tj
+T*
+(Use your own wording. Keep each bullet concise and testable.) Tj
+T*
+() Tj
+T*
+(**Suggested structure for your bullets**) Tj
+T*
+(? 1 bullet: business objective.) Tj
+T*
+(? 2 bullets: ingestion and transformation.) Tj
+T*
+(? 2 bullets: serving layer and API.) Tj
+T*
+(? 1 bullet: security/rate limit.) Tj
+T*
+(? 1 bullet: orchestration/operations.) Tj
+T*
+(? 1 bullet: performance strategy.) Tj
+T*
+(? 1 bullet: roadmap/future capability.) Tj
+T*
+() Tj
+T*
+(**Interview check:** if you cannot explain each bullet without notes, revisit docs.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(PHASE B ? CODE TRACING \(2?3 HOURS\)) Tj
+T*
+() Tj
+T*
+(STEP B1\) START FROM `CARMS/PIPELINES/DEFINITIONS.PY`) Tj
+T*
+() Tj
+T*
+(Understand the asset/check registration and job wiring:) Tj
+T*
+(? Which asset groups are loaded.) Tj
+T*
+(? What checks are attached.) Tj
+T*
+(? How materialization order is implied through dependencies.) Tj
+T*
+() Tj
+T*
+(STEP B2\) TRACE ONE RECORD BRONZE -> SILVER -> GOLD) Tj
+T*
+() Tj
+T*
+(Pick one `program_stream_id` and follow it through:) Tj
+T*
+(? Bronze models/assets \(`carms/pipelines/bronze`, `carms/models/bronze.py`\).) Tj
+T*
+(? Silver transforms \(`carms/pipelines/silver`, `carms/models/silver.py`\).) Tj
+T*
+(? Gold curation \(`carms/pipelines/gold`, `carms/models/gold.py`\).) Tj
+T*
+() Tj
+T*
+(Document for each stage:) Tj
+T*
+(? Input fields.) Tj
+T*
+(? Transformation/validation logic.) Tj
+T*
+(? Output fields.) Tj
+T*
+(? Potential failure or null/edge conditions.) Tj
+T*
+() Tj
+T*
+(STEP B3\) TRACE ONE API ENDPOINT ROUTE -> QUERY/MODEL -> RESPONSE SCHEMA) Tj
+T*
+() Tj
+T*
+(Recommended endpoint: `GET /programs`.) Tj
+T*
+() Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 12 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Length 1678 >>
+stream
+BT
+/F1 11 Tf
+1 0 0 1 54 738 Tm
+15 TL
+(Trace across:) Tj
+T*
+(? Route/controller: `carms/api/routes/programs.py`.) Tj
+T*
+(? Data access/session dependency: `carms/api/deps.py`, `carms/core/database.py`.) Tj
+T*
+(? SQLModel models: `carms/models/gold.py`.) Tj
+T*
+(? Response contracts: `carms/api/schemas.py`.) Tj
+T*
+() Tj
+T*
+(Then repeat quickly for:) Tj
+T*
+(? `GET /programs/{program_stream_id}`) Tj
+T*
+(? `GET /disciplines`) Tj
+T*
+(? `POST /pipeline/run`) Tj
+T*
+() Tj
+T*
+(STEP B4\) DRAW DATA FLOW ON PAPER \(OR DIGITAL WHITEBOARD\)) Tj
+T*
+() Tj
+T*
+(Include exactly three lanes:) Tj
+T*
+(1. **Source lane:** files in `data/`.) Tj
+T*
+(2. **Transform lane:** Dagster assets/checks.) Tj
+T*
+(3. **Serve lane:** FastAPI routes + map/static artifacts.) Tj
+T*
+() Tj
+T*
+(Also annotate:) Tj
+T*
+(? Where schema migrations apply.) Tj
+T*
+(? Where indexes matter.) Tj
+T*
+(? Where auth/rate limiting intercept requests.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(PHASE C ? RUNTIME UNDERSTANDING \(1?2 HOURS\)) Tj
+T*
+() Tj
+T*
+(STEP C1\) RUN TESTS AND INSPECT FAILURE BEHAVIOR BY BREAKING ONE TRANSFORM LOCALLY) Tj
+T*
+() Tj
+T*
+(Workflow:) Tj
+T*
+(1. Run baseline tests.) Tj
+T*
+(2. Intentionally break one silver transform rule \(e.g., province parsing or validity flag) Tj
+T*
+(behavior\).) Tj
+T*
+(3. Re-run tests.) Tj
+T*
+(4. Capture which tests fail and why.) Tj
+T*
+(5. Revert your break.) Tj
+T*
+() Tj
+T*
+(**Purpose:** develop confidence in what the tests protect vs what they do not.) Tj
+T*
+() Tj
+T*
+(STEP C2\) START FULL STACK WITH DOCKER AND HIT ENDPOINTS) Tj
+T*
+() Tj
+T*
+(Use full platform mode so Dagster + Postgres + API are all live.) Tj
+T*
+() Tj
+T*
+(Call at least:) Tj
+T*
+(? `GET /health`) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 12 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 1790 >>
+stream
+BT
+/F1 11 Tf
+1 0 0 1 54 738 Tm
+15 TL
+(? `GET /programs?province=ON&limit=5`) Tj
+T*
+(? `GET /programs/{program_stream_id}`) Tj
+T*
+(? `GET /disciplines`) Tj
+T*
+(? `GET /map/data.json`) Tj
+T*
+(? `POST /pipeline/run`) Tj
+T*
+() Tj
+T*
+(Capture examples of:) Tj
+T*
+(? Normal 200 response.) Tj
+T*
+(? At least one 4xx validation/auth/rate-limit response.) Tj
+T*
+() Tj
+T*
+(STEP C3\) OBSERVE LOGS AND CONNECT PIPELINE STEPS TO API OUTPUTS) Tj
+T*
+() Tj
+T*
+(In your notes, create a ?cause/effect? map:) Tj
+T*
+(? Which materialized table changed.) Tj
+T*
+(? Which endpoint payload changed.) Tj
+T*
+(? Which field in response is sourced from which table/column.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(PHASE D ? IMPROVEMENT READINESS \(1?2 HOURS\)) Tj
+T*
+() Tj
+T*
+(STEP D1\) IDENTIFY ONE QUALITY CHECK TO ADD) Tj
+T*
+() Tj
+T*
+(Examples:) Tj
+T*
+(? Assert no duplicate `program_stream_id` in gold.) Tj
+T*
+(? Assert `province` is in the allowed code set.) Tj
+T*
+(? Assert description text is non-empty for active programs.) Tj
+T*
+() Tj
+T*
+(For interview: explain expected false positives/negatives.) Tj
+T*
+() Tj
+T*
+(STEP D2\) IDENTIFY ONE INDEXING/PERFORMANCE IMPROVEMENT) Tj
+T*
+() Tj
+T*
+(Options:) Tj
+T*
+(? Add trigram index for `ILIKE` substring filters on discipline/school.) Tj
+T*
+(? Add composite index for common combined filters.) Tj
+T*
+(? Introduce materialized search view for high-frequency queries.) Tj
+T*
+() Tj
+T*
+(For interview: include expected query pattern and why b-tree alone may be insufficient for) Tj
+T*
+(`%...%`.) Tj
+T*
+() Tj
+T*
+(STEP D3\) IDENTIFY ONE DS FEATURE EXTENSION) Tj
+T*
+() Tj
+T*
+(Choose one and define MVP:) Tj
+T*
+(? Program similarity search over descriptions \(embedding + pgvector\).) Tj
+T*
+(? Preference-aware ranking \(province + discipline + quota + text relevance\).) Tj
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 12 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Length 2000 >>
+stream
+BT
+/F1 11 Tf
+1 0 0 1 54 738 Tm
+15 TL
+(? Scenario simulation \(e.g., discipline demand shifts by province\).) Tj
+T*
+() Tj
+T*
+(For interview: include training/validation data assumptions and fairness caveats.) Tj
+T*
+() Tj
+T*
+(STEP D4\) PREPARE YOUR ?FIRST 30 DAYS? PLAN) Tj
+T*
+() Tj
+T*
+(**Week 1:** Environment setup, lineage validation, endpoint smoke tests.) Tj
+T*
+() Tj
+T*
+(**Week 2:** Add one quality check + one observability improvement \(logging/metrics\).) Tj
+T*
+() Tj
+T*
+(**Week 3:** Ship one performance improvement with before/after benchmark.) Tj
+T*
+() Tj
+T*
+(**Week 4:** Prototype DS extension and present tradeoffs/next steps.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(DEEP-UNDERSTANDING CHECKLIST \(SELF-EVALUATION\)) Tj
+T*
+() Tj
+T*
+(You are interview-ready when you can answer ?yes? to all:) Tj
+T*
+() Tj
+T*
+(? I can explain bronze/silver/gold using one real row example.) Tj
+T*
+(? I can describe exactly how `/programs` applies filters and pagination.) Tj
+T*
+(? I can name where auth and rate limiting are enforced.) Tj
+T*
+(? I can explain one migration and one index from the codebase.) Tj
+T*
+(? I can run the stack and troubleshoot a failed endpoint quickly.) Tj
+T*
+(? I can propose one quality and one performance enhancement with rationale.) Tj
+T*
+(? I can describe one DS extension with realistic implementation scope.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(SUGGESTED FINAL DELIVERABLES FOR INTERVIEW PREP FOLDER) Tj
+T*
+() Tj
+T*
+(Create a personal folder \(outside git if preferred\) containing:) Tj
+T*
+(1. `architecture-summary.md` \(your 8?10 bullets\).) Tj
+T*
+(2. `record-trace.md` \(one row traced bronze->silver->gold\).) Tj
+T*
+(3. `endpoint-trace.md` \(route->query->schema walkthrough\).) Tj
+T*
+(4. `runtime-findings.md` \(tests, logs, failures, fixes\).) Tj
+T*
+(5. `first-30-days.md` \(execution plan + milestones\).) Tj
+T*
+() Tj
+T*
+(If you can present these five artifacts clearly, you will demonstrate genuine end-to-end) Tj
+T*
+(mastery rather than surface familiarity.) Tj
+ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 12 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 10 0 R >>
+endobj
+12 0 obj
+<< /Type /Pages /Kids [3 0 R 5 0 R 7 0 R 9 0 R 11 0 R] /Count 5 >>
+endobj
+13 0 obj
+<< /Type /Catalog /Pages 12 0 R >>
+endobj
+xref
+0 14
+0000000000 65535 f 
+0000000009 00000 n 
+0000000079 00000 n 
+0000001941 00000 n 
+0000002068 00000 n 
+0000003946 00000 n 
+0000004073 00000 n 
+0000005803 00000 n 
+0000005930 00000 n 
+0000007772 00000 n 
+0000007899 00000 n 
+0000009952 00000 n 
+0000010081 00000 n 
+0000010164 00000 n 
+trailer
+<< /Size 14 /Root 13 0 R >>
+startxref
+10215
+%%EOF
