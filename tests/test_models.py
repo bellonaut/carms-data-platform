@@ -1,6 +1,8 @@
 import os
 from importlib import reload
 
+os.environ.setdefault("DB_URL", "sqlite:///./test_models_import.db")
+
 import carms.core.database as db
 
 

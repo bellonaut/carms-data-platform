@@ -1,8 +1,20 @@
-from typing import List, Optional
-
 import sqlalchemy as sa
-from pgvector.sqlalchemy import Vector
+from typing import List, Optional
+from uuid import UUID
+
 from sqlmodel import Field, SQLModel
+
+# Prefer pgvector on Postgres; fall back to JSON for SQLite to keep tests green.
+try:  # pragma: no cover
+    from pgvector.sqlalchemy import Vector
+except Exception:  # pragma: no cover
+    Vector = None  # type: ignore
+
+
+def _embedding_column():
+    if Vector is not None:
+        return sa.Column(Vector(384))
+    return sa.Column(sa.JSON)
 
 
 class GoldProgramProfile(SQLModel, table=True):
@@ -37,5 +49,25 @@ class GoldProgramEmbedding(SQLModel, table=True):
     discipline_name: str = Field(index=True)
     province: str = Field(index=True)
     description_text: Optional[str] = None
-    # Store normalized embedding (384-dim for all-MiniLM-L6-v2) in pgvector.
-    embedding: List[float] = Field(sa_column=sa.Column(Vector(384)))
+    embedding: List[float] = Field(sa_column=_embedding_column())
+
+
+class GoldMatchScenario(SQLModel, table=True):
+    __tablename__ = "gold_match_scenario"
+
+    scenario_id: UUID = Field(primary_key=True)
+    scenario_label: Optional[str] = None
+    scenario_type: str = Field(index=True)
+    province: str = Field(index=True)
+    discipline_name: str = Field(index=True)
+    supply_quota: int
+    demand_mean: float
+    fill_rate_mean: float
+    fill_rate_p05: float
+    fill_rate_p95: float
+    iterations: int
+    seed: Optional[int] = None
+    params: Optional[dict] = Field(default=None, sa_column=sa.Column(sa.JSON))
+    created_at: Optional[str] = Field(
+        sa_column=sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now())
+    )

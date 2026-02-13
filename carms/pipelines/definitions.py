@@ -5,11 +5,12 @@ from carms.pipelines import checks as asset_checks
 from carms.pipelines.bronze import assets as bronze_assets
 from carms.pipelines.gold import assets as gold_assets
 from carms.pipelines.silver import assets as silver_assets
+from carms.analytics import assets as analytics_assets
 
 # Ensure tables exist when Dagster starts
 init_db()
 
-all_assets = load_assets_from_modules([bronze_assets, silver_assets, gold_assets])
+all_assets = load_assets_from_modules([bronze_assets, silver_assets, gold_assets, analytics_assets])
 all_asset_checks = load_asset_checks_from_modules([asset_checks])
 materialize_all = define_asset_job("carms_job", selection="*")
 

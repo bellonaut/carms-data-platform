@@ -18,3 +18,8 @@ ipynb_checkpoints/
 1503_*.zip
 program_descriptions.zip
 carms_hr.zip
+
+# Interview and job-posting prep artifacts
+docs/interview_project_mastery_plan.*
+docs/job_posting_*
+docs/job-posting_*

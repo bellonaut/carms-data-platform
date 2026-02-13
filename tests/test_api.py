@@ -1,13 +1,20 @@
+import os
 from importlib import reload
 
 from fastapi.testclient import TestClient
 
-import carms.api.main as main
+os.environ.setdefault("DB_URL", "sqlite:///./test_api_import.db")
+
 import carms.api.deps as deps
+import carms.api.main as main
 
 
-def _fresh_app():
+def _fresh_app(db_url: str | None = None):
     """Reload modules to pick up env changes and return a new FastAPI app."""
+    if db_url:
+        os.environ["DB_URL"] = db_url
+    else:
+        os.environ.setdefault("DB_URL", "sqlite:///./test_api.db")
     reload(deps)
     reload(main)
     return main.create_app()

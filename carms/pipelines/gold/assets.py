@@ -3,7 +3,6 @@ from functools import lru_cache
 from typing import Dict, List, Optional, Tuple
 
 from dagster import AssetIn, asset
-from sentence_transformers import SentenceTransformer
 from sqlmodel import Session, delete, select
 
 from carms.core.database import engine
@@ -91,8 +90,12 @@ def gold_program_profiles(
 
 
 @lru_cache(maxsize=1)
-def _get_embedding_model() -> SentenceTransformer:
+def _get_embedding_model():
     # MiniLM keeps footprint small while producing solid general-purpose embeddings.
+    try:
+        from sentence_transformers import SentenceTransformer
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError("sentence-transformers not installed") from exc
     return SentenceTransformer("all-MiniLM-L6-v2")
 
 

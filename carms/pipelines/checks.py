@@ -2,7 +2,7 @@ from dagster import AssetCheckResult, AssetCheckSeverity, asset_check
 from sqlmodel import Session, select
 
 from carms.core.database import engine
-from carms.models.gold import GoldGeoSummary, GoldProgramProfile
+from carms.models.gold import GoldGeoSummary, GoldProgramEmbedding, GoldProgramProfile
 from carms.models.silver import SilverDescriptionSection, SilverProgram
 
 
@@ -63,4 +63,15 @@ def gold_geo_summary_non_negative_program_count() -> AssetCheckResult:
         passed=negatives == 0,
         severity=AssetCheckSeverity.ERROR,
         metadata={"negative_count": negatives, "checked_rows": len(values)},
+    )
+
+
+@asset_check(asset="gold_program_embeddings", name="gold_program_embeddings_not_empty")
+def gold_program_embeddings_not_empty() -> AssetCheckResult:
+    with Session(engine) as session:
+        count = len(session.exec(select(GoldProgramEmbedding.program_stream_id)).all())
+    return AssetCheckResult(
+        passed=count > 0,
+        severity=AssetCheckSeverity.WARN,
+        metadata={"row_count": count},
     )

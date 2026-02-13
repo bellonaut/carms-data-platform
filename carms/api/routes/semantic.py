@@ -1,22 +1,27 @@
 from __future__ import annotations
 
+import math
 import os
 from functools import lru_cache
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
-from sqlmodel import Session
-from sentence_transformers import SentenceTransformer
+from sqlmodel import Session, select
 
 from carms.api.schemas import SemanticHit, SemanticQueryRequest, SemanticQueryResponse
 from carms.core.database import get_session
+from carms.models.gold import GoldProgramEmbedding
 
 router = APIRouter(prefix="/semantic", tags=["semantic"])
 
 
 @lru_cache(maxsize=1)
-def _get_model() -> SentenceTransformer:
+def _get_model():
+    try:
+        from sentence_transformers import SentenceTransformer
+    except ImportError as exc:
+        raise HTTPException(status_code=500, detail="sentence-transformers not installed") from exc
     return SentenceTransformer("all-MiniLM-L6-v2")
 
 
@@ -76,49 +81,87 @@ def semantic_query(
     model = _get_model()
     query_embedding = model.encode(payload.query, normalize_embeddings=True).tolist()
 
-    stmt = text(
-        """
-        SELECT
-            program_stream_id,
-            program_name,
-            program_stream_name,
-            discipline_name,
-            province,
-            description_text,
-            1 - (embedding <=> (:query_embedding)::vector) AS similarity
-        FROM gold_program_embedding
-        WHERE (:province IS NULL OR province = :province)
-          AND (:discipline IS NULL OR discipline_name ILIKE '%' || :discipline || '%')
-        ORDER BY embedding <=> (:query_embedding)::vector
-        LIMIT :top_k
-        """
-    )
-
-    rows = session.exec(
-        stmt,
-        {
-            "query_embedding": query_embedding,
-            "province": payload.province,
-            "discipline": payload.discipline,
-            "top_k": payload.top_k,
-        },
-    ).mappings()
-
     hits: List[SemanticHit] = []
-    for row in rows:
-        text_val = row.get("description_text")
-        snippet = text_val[:320] + "..." if text_val and len(text_val) > 320 else text_val
-        hits.append(
-            SemanticHit(
-                program_stream_id=row["program_stream_id"],
-                program_name=row["program_name"],
-                program_stream_name=row["program_stream_name"],
-                discipline_name=row["discipline_name"],
-                province=row["province"],
-                similarity=float(row["similarity"]),
-                description_snippet=snippet,
-            )
+    dialect = session.get_bind().dialect.name
+    if dialect == "postgresql":
+        stmt = text(
+            """
+            SELECT
+                program_stream_id,
+                program_name,
+                program_stream_name,
+                discipline_name,
+                province,
+                description_text,
+                1 - (embedding <=> (:query_embedding)::vector) AS similarity
+            FROM gold_program_embedding
+            WHERE (:province IS NULL OR province = :province)
+              AND (:discipline IS NULL OR discipline_name ILIKE '%' || :discipline || '%')
+            ORDER BY embedding <=> (:query_embedding)::vector
+            LIMIT :top_k
+            """
         )
+
+        rows = session.exec(
+            stmt,
+            {
+                "query_embedding": query_embedding,
+                "province": payload.province,
+                "discipline": payload.discipline,
+                "top_k": payload.top_k,
+            },
+        ).mappings()
+
+        for row in rows:
+            text_val = row.get("description_text")
+            snippet = text_val[:320] + "..." if text_val and len(text_val) > 320 else text_val
+            hits.append(
+                SemanticHit(
+                    program_stream_id=row["program_stream_id"],
+                    program_name=row["program_name"],
+                    program_stream_name=row["program_stream_name"],
+                    discipline_name=row["discipline_name"],
+                    province=row["province"],
+                    similarity=float(row["similarity"]),
+                    description_snippet=snippet,
+                )
+            )
+    else:
+        def _cosine_similarity(a: Sequence[float], b: Sequence[float]) -> float:
+            dot = sum(x * y for x, y in zip(a, b))
+            norm_a = math.sqrt(sum(x * x for x in a))
+            norm_b = math.sqrt(sum(y * y for y in b))
+            if norm_a == 0 or norm_b == 0:
+                return 0.0
+            return dot / (norm_a * norm_b)
+
+        query = select(GoldProgramEmbedding)
+        if payload.province:
+            query = query.where(GoldProgramEmbedding.province == payload.province)
+        if payload.discipline:
+            query = query.where(GoldProgramEmbedding.discipline_name.ilike(f"%{payload.discipline}%"))
+
+        rows = session.exec(query).all()
+        scored: List[tuple[float, GoldProgramEmbedding]] = []
+        for row in rows:
+            score = _cosine_similarity(query_embedding, row.embedding or [])
+            scored.append((score, row))
+        scored.sort(key=lambda x: x[0], reverse=True)
+
+        for score, row in scored[: payload.top_k]:
+            text_val = row.description_text
+            snippet = text_val[:320] + "..." if text_val and len(text_val) > 320 else text_val
+            hits.append(
+                SemanticHit(
+                    program_stream_id=row.program_stream_id,
+                    program_name=row.program_name,
+                    program_stream_name=row.program_stream_name,
+                    discipline_name=row.discipline_name,
+                    province=row.province,
+                    similarity=float(score),
+                    description_snippet=snippet,
+                )
+            )
 
     answer = _maybe_generate_answer(payload.query, hits)
     return SemanticQueryResponse(hits=hits, answer=answer, top_k=payload.top_k)

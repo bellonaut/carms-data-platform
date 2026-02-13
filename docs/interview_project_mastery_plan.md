@@ -10,6 +10,7 @@ This guide is designed to help you build **deep, end-to-end ownership** of this 
 - Added pgvector-backed table `gold_program_embedding` via Alembic migration `20260212_0002`.
 - New Dagster asset `gold_program_embeddings` that encodes `gold_program_profile.description_text` with `all-MiniLM-L6-v2`.
 - New FastAPI endpoint `POST /semantic/query` for semantic search (optional LangChain QA summary when `OPENAI_API_KEY` is set).
+- Added Monte Carlo match simulation pipeline + `gold_match_scenario` table with FastAPI `/analytics/simulate` endpoints.
 - API contract + README refreshed to include the semantic endpoint and new gold table.
 - Dependencies updated to include `langchain`, `langchain-community`, and `langchain-openai`.
 

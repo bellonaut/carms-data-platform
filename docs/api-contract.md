@@ -59,6 +59,40 @@
   - `200` with `{hits: [program_stream_id, names, province, discipline, similarity, description_snippet], answer?, top_k}`
   - `422` when top_k is out of bounds.
 
+### `POST /analytics/simulate`
+- Purpose: run Monte Carlo match scenarios and persist results.
+- Body:
+  - `scenario_type` (baseline | quota_shock | preference_shift, required)
+  - `scenario_label` (optional)
+  - `demand_multiplier` (float ≥0, default 1.0)
+  - `quota_multiplier` (float ≥0, default 1.0)
+  - `target_provinces`, `target_disciplines` (lists, optional)
+  - `shift_pct` (float between -0.9 and 0.9, default 0.15 for preference_shift)
+  - `iterations` (int 50–2000, default 300)
+  - `seed` (int, optional)
+  - `persist` (bool, default true)
+- Responses:
+  - `200` SimulationResponse with scenario_id, params, and province×discipline results.
+  - `422` on validation errors.
+
+### `GET /analytics/simulate/{scenario_id}`
+- Purpose: retrieve a previously saved simulation result.
+- Responses:
+  - `200` SimulationResponse
+  - `404` if scenario not found
+
+### `GET /analytics/preferences`
+- Purpose: sliceable preference scores per program using a ridge model over proxy demand (normalized quota).
+- Query params:
+  - `province` (str, optional, codes AB|BC|MB|NB|NL|NS|NT|NU|ON|PE|QC|SK|YT|UNKNOWN)
+  - `discipline` (str, optional, substring match, min length 2)
+  - `limit` (int, default 50, min 1, max 200)
+- Responses:
+  - `200` with `{items:[{program ids, names, province, score, feature_values, label_proxy}], feature_importances, model_version, filters}`
+  - `404` when no programs match or training data is empty
+  - `422` on validation errors.
+- Notes: model artifact persisted at `data/preferences_model.json` (overridable via `PREFERENCE_ARTIFACT_PATH`); uses quota as a proxy label so interpret with care.
+
 ## Error envelope
 - Validation: FastAPI default `422 Unprocessable Entity` with details.
 - Auth: `401` with message when API key invalid/missing.

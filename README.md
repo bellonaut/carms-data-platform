@@ -73,10 +73,12 @@ If ports are in use from an earlier run, stop and reset:
 | GET | `/programs/{program_stream_id}` | Program detail | program_stream_id |
 | GET | `/disciplines` | Active discipline lookup | - |
 | POST | `/pipeline/run` | Trigger Dagster carms_job via GraphQL | - |
-| GET | `/map` | Choropleth HTML | - |
-| GET | `/map/data.json` | Province rollup JSON | - |
-| GET | `/map/canada.geojson` | GeoJSON | - |
-| POST | `/semantic/query` | Semantic search with optional LangChain QA summary | query, province?, discipline?, top_k |
+  | GET | `/map` | Choropleth HTML | - |
+  | GET | `/map/data.json` | Province rollup JSON | - |
+  | GET | `/map/canada.geojson` | GeoJSON | - |
+  | POST | `/semantic/query` | Semantic search with optional LangChain QA summary | query, province?, discipline?, top_k |
+  | POST / GET | `/analytics/simulate` | Monte Carlo match scenarios | scenario_type, demand/quota multipliers, shift_pct, iterations |
+  | GET | `/analytics/preferences` | Preference scores + feature importances | province, discipline, limit |
 
 Security and limits (configurable via `.env`):
 - X-API-Key header enforced when `API_KEY` is set.
