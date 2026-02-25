@@ -1,2 +1,52 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "carms"
+version = "1.0.1"
+description = "CaRMS Analytics Platform"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "torch==2.6.0",
+  "sqlmodel",
+  "dagster",
+  "dagster-webserver",
+  "fastapi",
+  "uvicorn",
+  "pandas",
+  "openpyxl",
+  "alembic",
+  "psycopg2-binary",
+  "pydantic-settings",
+  "sentence-transformers==2.6.1",
+  "pgvector",
+  "mkdocs",
+  "mkdocs-material",
+  "httpx",
+  "plotly>=5.18",
+  "Pillow>=10.2.0",
+  "pre-commit>=3.7.0",
+  "ruff>=0.6.0",
+  "pytest>=7.4.4",
+  "langchain>=0.1.12",
+  "langchain-community>=0.0.18",
+  "langchain-openai>=0.0.8",
+]
+
+[project.optional-dependencies]
+ui = [
+  "fastapi",
+  "uvicorn[standard]",
+  "sqlmodel",
+  "alembic",
+  "pydantic-settings",
+  "httpx",
+]
+
+[tool.setuptools.packages.find]
+include = ["carms*"]
+
 [tool.dagster]
 module_name = "carms.pipelines.definitions"

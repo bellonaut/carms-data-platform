@@ -1,7 +1,0 @@
-# Minimal dependencies for UI-only demo (SQLite, no Dagster)
-fastapi
-uvicorn[standard]
-sqlmodel
-alembic
-pydantic-settings
-httpx
