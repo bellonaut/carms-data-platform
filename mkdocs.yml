@@ -1,14 +1,17 @@
-site_name: CaRMS Platform
+site_name: CaRMS Data Platform
 site_description: Modernized data platform for CaRMS public data
 theme:
   name: material
 nav:
   - Home: index.md
   - Architecture: architecture.md
+  - API: api.md
+  - Analytics: analytics.md
   - Data Dictionary: data-dictionary.md
-  - Insights (HTML): insights.html
   - API Contract: api-contract.md
   - Performance Notes: performance.md
+  - Deployment: deployment.md
+  - Insights (HTML): insights.html
 markdown_extensions:
   - admonition
   - toc:

@@ -7,14 +7,14 @@ from sqlmodel import Session
 os.environ.setdefault("DB_URL", "sqlite:///./test_assets_import.db")
 
 import carms.core.database as db
-from carms.models.gold import GoldProgramEmbedding, GoldProgramProfile
+from carms.models.gold import GoldProgramProfile
 from carms.pipelines import checks
 from carms.pipelines.gold import assets as gold_assets
 
 
 class StubEmbedder:
     def encode(self, text, normalize_embeddings=True):
-        return np.array([0.0, 1.0])
+        return np.array([0.0, 1.0] + [0.0] * 382)
 
 
 def setup_db(tmp_path, monkeypatch):

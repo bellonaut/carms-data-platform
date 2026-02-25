@@ -16,6 +16,10 @@ from carms.models.gold import GoldProgramEmbedding
 from carms.models.silver import SilverProgram
 
 
+def _vec384(first: float, second: float) -> list[float]:
+    return [first, second] + [0.0] * 382
+
+
 def _seed(session: Session) -> None:
     session.add_all(
         [
@@ -75,7 +79,7 @@ def _seed(session: Session) -> None:
                 discipline_name="Family Medicine",
                 province="ON",
                 description_text="Great program A",
-                embedding=[1.0, 0.0],
+                embedding=_vec384(1.0, 0.0),
             ),
             GoldProgramEmbedding(
                 program_stream_id=2,
@@ -84,7 +88,7 @@ def _seed(session: Session) -> None:
                 discipline_name="Family Medicine",
                 province="QC",
                 description_text="Great program B",
-                embedding=[0.2, 0.8],
+                embedding=_vec384(0.2, 0.8),
             ),
         ]
     )
@@ -123,7 +127,7 @@ def test_artifact_roundtrip_and_scoring(tmp_path, monkeypatch):
     artifact_path = _setup(tmp_path, monkeypatch)
     with Session(db.engine) as session:
         _seed(session)
-        artifact = preferences.train_preference_model(session, persist=True)
+        preferences.train_preference_model(session, persist=True)
 
     assert artifact_path.exists()
     loaded = preferences.load_artifact()
