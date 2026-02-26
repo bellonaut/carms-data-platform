@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List
 
 import pandas as pd
 from dagster import asset, get_dagster_logger
@@ -47,7 +46,9 @@ def bronze_programs() -> int:
     if "Unnamed: 0" in df.columns:
         df = df.drop(columns=["Unnamed: 0"])
 
-    programs: List[BronzeProgram] = [BronzeProgram(**_clean_record(r)) for r in df.to_dict(orient="records")]
+    programs: list[BronzeProgram] = [
+        BronzeProgram(**_clean_record(r)) for r in df.to_dict(orient="records")
+    ]
 
     with Session(engine) as session:
         session.exec(delete(BronzeProgram))
@@ -64,7 +65,7 @@ def bronze_disciplines() -> int:
     df = pd.read_excel(path)
     df = df.rename(columns=lambda c: c.strip())
 
-    disciplines: List[BronzeDiscipline] = [
+    disciplines: list[BronzeDiscipline] = [
         BronzeDiscipline(**_clean_record(r)) for r in df.to_dict(orient="records")
     ]
 
@@ -85,14 +86,16 @@ def bronze_descriptions() -> int:
     if "Unnamed: 0" in df.columns:
         df = df.drop(columns=["Unnamed: 0"])
 
-    descriptions: List[BronzeDescription] = []
+    descriptions: list[BronzeDescription] = []
     for record in df.to_dict(orient="records"):
         cleaned = _clean_record(record)
         match_iteration_id = cleaned.get("match_iteration_id")
         program_description_id = cleaned.get("program_description_id")
 
         if match_iteration_id is not None and program_description_id is not None:
-            cleaned["document_id"] = canonical_id(int(match_iteration_id), int(program_description_id))
+            cleaned["document_id"] = canonical_id(
+                int(match_iteration_id), int(program_description_id)
+            )
 
         descriptions.append(BronzeDescription(**cleaned))
 

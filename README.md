@@ -1,127 +1,107 @@
-# CaRMS Analytics Platform
+# CaRMS Data Platform
 
-Built by Bashir ("bellonaut") Bello. I love intuitive, interactive maps--see the [Health Desert explorer](https://bashir-healthdesert.streamlit.app) built from the [health-desert-scorer](https://github.com/bellonaut/health-desert-scorer) repo--so the province choropleth comes from that obsession. My younger brother will be an IMG soon, so the insights lean toward that lens; check the static write-up at [docs/insights.html](docs/insights.html).
+An end-to-end data platform over the public CaRMS residency data from the `dnokes/Junior-Data-Scientist` source dataset.
 
-### What it is
-An end-to-end, production-style data platform for the public CaRMS residency program dataset. It ingests raw Excel/CSV extracts, shapes them into bronze -> silver -> gold tables with Dagster and Postgres (pgvector-ready), and serves both program search APIs and a province-level choropleth map via FastAPI. The goal is to showcase systems thinking for a junior data scientist focused on data engineering, analytics, and delivery.
+## Architecture
 
-### Demo options (pick one)
-| Mode | Stack | Data path | Run (macOS/Linux) | Run (Windows) | Opens |
-|------|-------|-----------|-------------------|---------------|-------|
-| UI-only demo | FastAPI + SQLite | Synthetic seed into gold tables | `make ui-demo` | `powershell -ExecutionPolicy Bypass -File scripts/ui_demo.ps1` | /docs, /map (FastAPI only) |
-| Full platform demo | Docker: Postgres + Dagster + API | Dagster materializes bronze -> silver -> gold | `make demo` | `powershell -ExecutionPolicy Bypass -File scripts/demo.ps1` | Dagster UI :3000, /docs, /map |
-
-### Architecture (ASCII)
-```
-           +-------------+
-           | Source CSV  |
-           +------+------+
-                  |
-                  v
-         +--------+--------+        Docker Compose
-         |  Dagster Assets |        (Postgres, Dagster UI, API)
-         | bronze/silver   |
-         +--------+--------+
-                  |
-                  v
-         +-----------------+   Postgres (pgvector enabled)
-         |   Gold Layer    |   gold_program_profile
-         |                 |   gold_geo_summary
-         +--------+--------+
-                  |
-        +---------+---------+
-        | FastAPI + SQLModel|
-        +----+-----------+--+
-             |           |
-      /programs JSON   /map HTML (Plotly)
+```text
+Public CaRMS Data (XLSX/CSV)
+  |
+  |  Dagster bronze assets (bronze_programs, bronze_disciplines, bronze_descriptions)
+  v
+Bronze Layer (S3 target / local data/ in this repo)
+  |
+  |  Dagster silver assets + SQLModel transforms
+  v
+Silver Layer (cleaned, normalized tables)
+  |
+  |  Dagster gold assets + SQLModel models
+  v
+Gold Layer in PostgreSQL (gold_program_profile, gold_geo_summary, gold_program_embedding)
+  |
+  |  FastAPI routes + SQLModel sessions
+  v
+FastAPI API (/programs, /disciplines, /map, /pipeline, /analytics, /semantic/query)
+  |
+  |  Optional LangChain summarization chain when OPENAI_API_KEY is set
+  v
+RAG-style grounded response on semantic queries
 ```
 
-### Data layers
-- bronze_program / bronze_discipline / bronze_description - raw CaRMS extracts as-is.
-- silver_program - cleaned columns, province derivation, quota parsing, validity flags.
-- silver_description_section - unpivoted description text per section.
-- gold_program_profile - curated program metadata plus concatenated descriptions.
-- gold_program_embedding - pgvector embeddings from gold descriptions for semantic search.
-- gold_geo_summary - province x discipline rollups with program counts and avg quota.
+## Stack
 
-### UI-only demo (FastAPI + seeded SQLite)
-- Commands: `make ui-demo` (macOS/Linux) OR `powershell -ExecutionPolicy Bypass -File scripts/ui_demo.ps1` (Windows).
-- Starts FastAPI on http://localhost:8000; opens Swagger at `/docs` and the map at `/map`.
-- Seeds synthetic gold tables so `/programs` and `/map` return data; `/pipeline/run` is not available here.
+| Tool | Role in this project |
+| --- | --- |
+| PostgreSQL | System of record for bronze/silver/gold tables (with pgvector support). |
+| SQLAlchemy/SQLModel | ORM models, schema mapping, and session management for assets and API routes. |
+| Dagster | Asset orchestration across Bronze -> Silver -> Gold (and analytics assets). |
+| FastAPI | REST API and interactive docs for programs, map, pipeline, semantic, and analytics endpoints. |
+| Alembic | Migration workflow for schema changes. |
+| MkDocs | Documentation site under `docs/` and `mkdocs.yml`. |
+| Docker | Local multi-service runtime (`postgres`, `dagster`, `api`) via `docker-compose`. |
+| Ruff | Linting and formatting checks. |
+| pre-commit | Local hook runner for Ruff and hygiene checks before commits. |
+| LangChain | Optional summarization step in `POST /semantic/query` when `OPENAI_API_KEY` is configured. |
+| AWS (ECS/Fargate + RDS) | Target deployment environment - see `docs/deployment.md`. |
 
-### Full platform demo (Docker + Dagster + Postgres)
-- Commands: `make demo` (macOS/Linux) OR `powershell -ExecutionPolicy Bypass -File scripts/demo.ps1` (Windows).
-- Builds/starts Docker Compose, applies Alembic in the container, materializes assets bronze -> silver -> gold.
-- Opens Dagster UI at http://localhost:3000 plus FastAPI `/docs` and `/map` on http://localhost:8000.
+## Quickstart
 
-### Run it in 10 minutes (manual)
-1. `cp .env.example .env`
-2. `docker-compose up --build`
-3. Run migrations: `alembic upgrade head`
-4. Visit Dagster UI `http://localhost:3000` and run job `carms_job` (materializes bronze -> silver -> gold).
-5. Check API docs at `http://localhost:8000/docs` and the map at `http://localhost:8000/map`.
+```bash
+git clone <repo-url> && cd Junior-Data-Scientist-main
+cp .env.example .env
+make dev
+```
 
-If ports are in use from an earlier run, stop and reset:
-- UI-only: remove `.venv-demo` and `demo.db`, then rerun the script.
-- Full platform: `docker compose down -v`
+`make dev` runs `docker-compose up` and starts PostgreSQL, Dagster, and FastAPI.
+Manual steps still required for full end-to-end data availability:
 
-### Endpoints
-| Method | Path | Purpose | Key params |
-|--------|------|---------|------------|
-| GET | `/health` | Liveness | - |
-| GET | `/programs` | List/search programs | discipline, province, school, limit, offset, include_total, preview_chars |
-| GET | `/programs/{program_stream_id}` | Program detail | program_stream_id |
-| GET | `/disciplines` | Active discipline lookup | - |
-| POST | `/pipeline/run` | Trigger Dagster carms_job via GraphQL | - |
-  | GET | `/map` | Choropleth HTML | - |
-  | GET | `/map/data.json` | Province rollup JSON | - |
-  | GET | `/map/canada.geojson` | GeoJSON | - |
-  | POST | `/semantic/query` | Semantic search with optional LangChain QA summary | query, province?, discipline?, top_k |
-  | POST / GET | `/analytics/simulate` | Monte Carlo match scenarios | scenario_type, demand/quota multipliers, shift_pct, iterations |
-  | GET | `/analytics/preferences` | Preference scores + feature importances | province, discipline, limit |
+```bash
+docker exec carms_dagster alembic upgrade head
+docker exec carms_dagster dagster asset materialize --select "*" -m carms.pipelines.definitions --wait
+```
 
-Security and limits (configurable via `.env`):
-- X-API-Key header enforced when `API_KEY` is set.
-- Rate limit: `RATE_LIMIT_REQUESTS` per `RATE_LIMIT_WINDOW_SEC` (default 120/min per client IP).
+## Project Structure
 
-### 5-minute demo script
-1) Open `/docs` and run `GET /programs?province=ON&limit=5` to show filters and pagination.  
-2) Click `/programs/{id}` for a detail view with full description text.  
-3) In Dagster (`http://localhost:3000`), open job `carms_job` to show the bronze/silver/gold asset graph.  
-4) Open `/map`, toggle choropleth vs bubble, hover a province to show counts and share.  
-5) Mention optional API key plus rate limiting and point to `docs/api-contract.md`.
+```text
+carms/        # main package (Dagster assets, FastAPI app, SQLModel schemas)
+alembic/      # database migrations
+docs/         # MkDocs documentation
+notebooks/    # Quarto-based insight reports
+tests/        # pytest test suite
+scripts/      # utility scripts
+data/         # local data directory (gitignored - populate via pipeline)
+```
 
-### Insights notebook
-- Static HTML render with province/discipline mix, IMG lens, and description similarity: [docs/insights.html](docs/insights.html)
+## Data
 
-### Screenshots
-#### Province choropleth (program count)
-![Choropleth map](docs/images/map-program-count.png)
+This project uses public CaRMS residency program extracts (program master, disciplines, and description sections) sourced from the `dnokes/Junior-Data-Scientist` dataset lineage. The files contain program metadata, discipline mappings, and free-text program descriptions used to build bronze/silver/gold analytical tables. Populate local `data/` by running the Dagster pipeline after starting services.
 
-#### API list + filters
-![Program list](docs/images/program-filter.png)
+## Testing
 
-#### Discipline lookup
-![Disciplines](docs/images/disciplines-search.png)
+Run the test suite with:
 
-#### Pipelines (Dagster assets)
-![Dagster](docs/images/dagster-assets.png)
+```bash
+make test
+```
 
-#### Program detail view
-![Program detail](docs/images/program-view.png)
+or:
 
+```bash
+pytest tests/
+```
 
-### Roadmap
-- Expand preference modeling + scenario simulation with stored results.
-- Performance notes: [docs/performance.md](docs/performance.md)
-- Schedule Dagster runs with data quality checks and freshness alerts.
-- Deploy a lightweight demo (RDS + ECS/Fargate or Fly) with CI (pytest + ruff).
+## Documentation
 
-### Sharing a clean copy
-- Source data now lives under `data/`; heavy root archives were removed to keep the repo lean.
-- After staging/committing, create a slim zip for HR with: `git archive --format=zip -o carms_hr.zip HEAD`.
+Serve docs locally with:
 
-### License
-MIT
+```bash
+mkdocs serve
+```
 
-More about me: [www.bashir.bio](https://www.bashir.bio)
+## What's Next
+
+- Deploy the current compose stack to AWS ECS/Fargate with PostgreSQL on RDS/Aurora.
+- Move bronze ingestion from local `data/` to S3-backed ingestion contracts.
+- Harden the LangChain path with retrieval evaluation and prompt regression tests.
+- Add CI gates for tests, Ruff, pre-commit, and strict MkDocs build checks.
+- Publish operational runbooks for migration, backfill, and rollback workflows.

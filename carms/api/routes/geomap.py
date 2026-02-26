@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Tuple, List
+from typing import Annotated
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import FileResponse
@@ -13,7 +13,7 @@ router = APIRouter(tags=["map"])
 
 # Rough centroids (demo-appropriate)
 # lat, lon in degrees
-PROVINCE_CENTROIDS: Dict[str, Tuple[float, float, str]] = {
+PROVINCE_CENTROIDS: dict[str, tuple[float, float, str]] = {
     "BC": (53.7267, -127.6476, "British Columbia"),
     "AB": (53.9333, -116.5765, "Alberta"),
     "SK": (52.9399, -106.4509, "Saskatchewan"),
@@ -40,25 +40,20 @@ def map_page() -> FileResponse:
 @router.get("/map/canada.geojson", response_class=FileResponse)
 def map_geojson() -> FileResponse:
     # Serve the static GeoJSON used by the choropleth map
-    geojson_path = (
-        Path(__file__).resolve().parents[2] / "static" / "map" / "canada.geojson"
-    )
+    geojson_path = Path(__file__).resolve().parents[2] / "static" / "map" / "canada.geojson"
     return FileResponse(str(geojson_path), media_type="application/geo+json")
 
 
 @router.get("/map/data.json")
-def map_data(session: Session = Depends(get_session)) -> List[dict]:
+def map_data(session: Annotated[Session, Depends(get_session)]) -> list[dict]:
     # Aggregate: total program_count per province
-    stmt = (
-        select(
-            GoldGeoSummary.province,
-            func.sum(GoldGeoSummary.program_count).label("programs"),
-        )
-        .group_by(GoldGeoSummary.province)
-    )
+    stmt = select(
+        GoldGeoSummary.province,
+        func.sum(GoldGeoSummary.program_count).label("programs"),
+    ).group_by(GoldGeoSummary.province)
     rows = session.exec(stmt).all()
 
-    points: List[dict] = []
+    points: list[dict] = []
     for province, programs in rows:
         if not province or province == "UNKNOWN":
             continue

@@ -5,9 +5,9 @@ Revises:
 Create Date: 2026-02-11 00:01:00.000000
 """
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "20260211_0001"
@@ -128,7 +128,9 @@ def upgrade() -> None:
     )
 
     op.create_index("ix_gold_program_profile_province", "gold_program_profile", ["province"])
-    op.create_index("ix_gold_program_profile_discipline_name", "gold_program_profile", ["discipline_name"])
+    op.create_index(
+        "ix_gold_program_profile_discipline_name", "gold_program_profile", ["discipline_name"]
+    )
     op.create_index("ix_gold_program_profile_school_name", "gold_program_profile", ["school_name"])
 
 

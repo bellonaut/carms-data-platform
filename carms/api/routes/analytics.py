@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -35,7 +35,7 @@ def _validate(payload: SimulationRequest) -> None:
         raise HTTPException(status_code=422, detail="shift_pct must be between -0.9 and 0.9")
 
 
-def _rows_to_response(rows: List[GoldMatchScenario]) -> SimulationResponse:
+def _rows_to_response(rows: list[GoldMatchScenario]) -> SimulationResponse:
     if not rows:
         raise HTTPException(status_code=404, detail="Scenario not found")
     first = rows[0]
@@ -64,7 +64,10 @@ def _rows_to_response(rows: List[GoldMatchScenario]) -> SimulationResponse:
 
 
 @router.post("/simulate", response_model=SimulationResponse)
-def simulate(payload: SimulationRequest, session: Session = Depends(get_session)) -> SimulationResponse:
+def simulate(
+    payload: SimulationRequest,
+    session: Annotated[Session, Depends(get_session)],
+) -> SimulationResponse:
     _validate(payload)
     params = SimulationParams(
         scenario_type=payload.scenario_type,
@@ -83,36 +86,43 @@ def simulate(payload: SimulationRequest, session: Session = Depends(get_session)
 
 
 @router.get("/simulate/{scenario_id}", response_model=SimulationResponse)
-def get_simulation(scenario_id: UUID, session: Session = Depends(get_session)) -> SimulationResponse:
-    rows = session.exec(select(GoldMatchScenario).where(GoldMatchScenario.scenario_id == scenario_id)).all()
+def get_simulation(
+    scenario_id: UUID,
+    session: Annotated[Session, Depends(get_session)],
+) -> SimulationResponse:
+    rows = session.exec(
+        select(GoldMatchScenario).where(GoldMatchScenario.scenario_id == scenario_id)
+    ).all()
     return _rows_to_response(rows)
 
 
 @router.get("/preferences", response_model=PreferenceResponse)
 def preference_scores(
-    province: Optional[str] = Query(
+    session: Annotated[Session, Depends(get_session)],
+    province: str | None = Query(
         default=None,
         pattern=PROVINCE_PATTERN,
         description="Province code filter (AB|BC|...|UNKNOWN)",
     ),
-    discipline: Optional[str] = Query(
+    discipline: str | None = Query(
         default=None,
         min_length=2,
         description="Discipline substring filter (min length 2)",
     ),
     limit: int = Query(default=50, ge=1, le=200, description="Max number of rows"),
-    session: Session = Depends(get_session),
 ) -> PreferenceResponse:
     try:
         artifact = preferences.ensure_artifact(session)
     except ValueError as exc:  # no programs to train
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    scores = preferences.score_slice(session, artifact, province=province, discipline=discipline, limit=limit)
+    scores = preferences.score_slice(
+        session, artifact, province=province, discipline=discipline, limit=limit
+    )
     if not scores:
         raise HTTPException(status_code=404, detail="No programs found for slice")
 
-    items: List[PreferenceScore] = [
+    items: list[PreferenceScore] = [
         PreferenceScore(
             program_stream_id=s.program_stream_id,
             program_name=s.program_name,
@@ -129,7 +139,9 @@ def preference_scores(
 
     return PreferenceResponse(
         items=items,
-        feature_importances={k: round(float(v), 4) for k, v in artifact.feature_importances.items()},
+        feature_importances={
+            k: round(float(v), 4) for k, v in artifact.feature_importances.items()
+        },
         model_version=artifact.version,
         filters={"province": province, "discipline": discipline},
     )

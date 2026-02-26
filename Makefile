@@ -1,4 +1,19 @@
-.PHONY: demo demo-windows ui-demo ui-demo-windows clean
+.PHONY: dev test lint docs install demo demo-windows ui-demo ui-demo-windows clean
+
+dev:
+	docker-compose up
+
+test:
+	pytest tests/
+
+lint:
+	ruff check .
+
+docs:
+	mkdocs serve
+
+install:
+	pip install -e ".[ui]"
 
 demo:
 	bash scripts/demo.sh

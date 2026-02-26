@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
@@ -23,20 +23,25 @@ def make_preview(text: str | None, preview_chars: int) -> str | None:
 
 # ---------- Routes ----------
 
+
 @router.get("/", response_model=ProgramListResponse)
 def list_programs(
-    discipline: Optional[str] = Query(default=None, description="Filter by discipline name (substring match)"),
-    province: Optional[str] = Query(
+    session: Annotated[Session, Depends(get_session)],
+    discipline: str | None = Query(
+        default=None, description="Filter by discipline name (substring match)"
+    ),
+    province: str | None = Query(
         default=None,
         description="Filter by province code (exact match)",
         pattern=PROVINCE_PATTERN,
     ),
-    school: Optional[str] = Query(default=None, description="Filter by school name (substring match)"),
+    school: str | None = Query(default=None, description="Filter by school name (substring match)"),
     limit: int = Query(default=100, ge=1, le=500, description="Maximum number of rows to return"),
     offset: int = Query(default=0, ge=0, description="Row offset for pagination"),
     include_total: bool = Query(default=False, description="Include full filtered row count"),
-    preview_chars: int = Query(default=900, ge=0, le=5000, description="Max characters for description_preview"),
-    session: Session = Depends(get_session),
+    preview_chars: int = Query(
+        default=900, ge=0, le=5000, description="Max characters for description_preview"
+    ),
 ) -> ProgramListResponse:
     statement = select(GoldProgramProfile)
 
@@ -47,14 +52,14 @@ def list_programs(
     if school:
         statement = statement.where(GoldProgramProfile.school_name.ilike(f"%{school}%"))
 
-    total: Optional[int] = None
+    total: int | None = None
     if include_total:
         count_statement = select(func.count()).select_from(statement.subquery())
         total = session.exec(count_statement).one()
 
     rows = session.exec(statement.offset(offset).limit(limit)).all()
 
-    items: List[ProgramListItem] = [
+    items: list[ProgramListItem] = [
         ProgramListItem(
             program_stream_id=r.program_stream_id,
             program_stream_name=r.program_stream_name,
@@ -77,7 +82,7 @@ def list_programs(
 @router.get("/{program_stream_id}", response_model=ProgramDetail)
 def get_program(
     program_stream_id: int,
-    session: Session = Depends(get_session),
+    session: Annotated[Session, Depends(get_session)],
 ) -> ProgramDetail:
     row = session.exec(
         select(GoldProgramProfile).where(GoldProgramProfile.program_stream_id == program_stream_id)

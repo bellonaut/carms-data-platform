@@ -3,6 +3,7 @@
 Small helper to wait for an HTTP endpoint to return a 2xx/3xx.
 Usage: python scripts/wait_for_http.py <url> <timeout_seconds> [interval_seconds]
 """
+
 from __future__ import annotations
 
 import sys

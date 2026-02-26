@@ -1,6 +1,5 @@
 import re
 import unicodedata
-from typing import Dict, List, Optional
 
 from dagster import AssetIn, asset
 from sqlmodel import Session, delete, select
@@ -25,7 +24,7 @@ PROVINCE_CODES = {
     "NU",
 }
 
-SCHOOL_PROVINCE_MAP: Dict[str, str] = {
+SCHOOL_PROVINCE_MAP: dict[str, str] = {
     "dalhousie university": "NS",
     "mcgill university": "QC",
     "mcmaster university": "ON",
@@ -48,7 +47,7 @@ SCHOOL_PROVINCE_MAP: Dict[str, str] = {
 }
 
 
-def _normalize_text(value: Optional[str]) -> str:
+def _normalize_text(value: str | None) -> str:
     if not value:
         return ""
     normalized = unicodedata.normalize("NFKD", value)
@@ -57,7 +56,7 @@ def _normalize_text(value: Optional[str]) -> str:
     return " ".join(normalized_quotes.lower().split())
 
 
-def parse_province(program_site: Optional[str]) -> Optional[str]:
+def parse_province(program_site: str | None) -> str | None:
     if not program_site:
         return None
     tokens = [t.strip() for t in program_site.replace(";", ",").split(",") if t.strip()]
@@ -68,7 +67,7 @@ def parse_province(program_site: Optional[str]) -> Optional[str]:
     return None
 
 
-def derive_province(program_site: Optional[str], school_name: Optional[str]) -> str:
+def derive_province(program_site: str | None, school_name: str | None) -> str:
     province_from_site = parse_province(program_site)
     if province_from_site:
         return province_from_site
@@ -80,11 +79,11 @@ def derive_province(program_site: Optional[str], school_name: Optional[str]) -> 
     return "UNKNOWN"
 
 
-def is_valid_text(value: Optional[str]) -> bool:
+def is_valid_text(value: str | None) -> bool:
     return bool(value and str(value).strip())
 
 
-def parse_quota(match_iteration_name: Optional[str]) -> Optional[int]:
+def parse_quota(match_iteration_name: str | None) -> int | None:
     if not match_iteration_name:
         return None
     match = re.search(
@@ -108,9 +107,11 @@ def silver_programs(bronze_programs) -> int:  # type: ignore[unused-argument]
         programs = session.exec(select(BronzeProgram)).all()
         session.exec(delete(SilverProgram))
 
-        silver_rows: List[SilverProgram] = []
+        silver_rows: list[SilverProgram] = []
         for row in programs:
-            province = derive_province(row.program_site, row.school_name)  # prefer site, then fall back to school map
+            province = derive_province(
+                row.program_site, row.school_name
+            )  # prefer site, then fall back to school map
             # province is guaranteed non-null ("UNKNOWN" fallback) by derive_province()
             is_valid = all([row.program_stream_id, row.program_name, row.discipline_id])
             silver_rows.append(
@@ -142,7 +143,7 @@ def silver_disciplines(bronze_disciplines) -> int:  # type: ignore[unused-argume
         disciplines = session.exec(select(BronzeDiscipline)).all()
         session.exec(delete(SilverDiscipline))
 
-        silver_rows: List[SilverDiscipline] = [
+        silver_rows: list[SilverDiscipline] = [
             SilverDiscipline(
                 discipline_id=row.discipline_id,
                 discipline=row.discipline,
@@ -179,7 +180,7 @@ def silver_description_sections(bronze_descriptions) -> int:  # type: ignore[unu
         descriptions = session.exec(select(BronzeDescription)).all()
         session.exec(delete(SilverDescriptionSection))
 
-        silver_rows: List[SilverDescriptionSection] = []
+        silver_rows: list[SilverDescriptionSection] = []
         for desc in descriptions:
             for col in section_columns:
                 text = getattr(desc, col)

@@ -1,14 +1,12 @@
 import os
 from importlib import reload
 
-import numpy as np
 from sqlmodel import Session
 
 os.environ.setdefault("DB_URL", "sqlite:///./test_sim_import.db")
 
 import carms.core.database as db
 from carms.analytics.simulation import SimulationParams, run_simulation
-from carms.models.gold import GoldMatchScenario
 from carms.models.silver import SilverProgram
 
 
@@ -104,7 +102,9 @@ def test_preference_shift_moves_demand(tmp_path, monkeypatch):
         session.add_all(seed_supply())
         session.commit()
 
-        base_params = SimulationParams(scenario_type="baseline", iterations=200, seed=10, persist=False)
+        base_params = SimulationParams(
+            scenario_type="baseline", iterations=200, seed=10, persist=False
+        )
         _, base_rows = run_simulation(session, base_params)
 
         shift_params = SimulationParams(

@@ -1,5 +1,3 @@
-from typing import Optional
-
 from sqlmodel import Field, SQLModel
 
 
@@ -14,7 +12,7 @@ class BronzeProgram(SQLModel, table=True):
     program_site: str
     program_stream: str
     program_name: str
-    program_url: Optional[str] = None
+    program_url: str | None = None
 
 
 class BronzeDiscipline(SQLModel, table=True):
@@ -26,22 +24,22 @@ class BronzeDiscipline(SQLModel, table=True):
 class BronzeDescription(SQLModel, table=True):
     __tablename__ = "bronze_description"
     document_id: str = Field(primary_key=True)
-    source: Optional[str] = None
-    n_program_description_sections: Optional[int] = None
+    source: str | None = None
+    n_program_description_sections: int | None = None
     program_name: str
-    match_iteration_name: Optional[str] = None
-    program_contracts: Optional[str] = None
-    general_instructions: Optional[str] = None
-    supporting_documentation_information: Optional[str] = None
-    review_process: Optional[str] = None
-    interviews: Optional[str] = None
-    selection_criteria: Optional[str] = None
-    program_highlights: Optional[str] = None
-    program_curriculum: Optional[str] = None
-    training_sites: Optional[str] = None
-    additional_information: Optional[str] = None
-    return_of_service: Optional[str] = None
-    faq: Optional[str] = None
-    summary_of_changes: Optional[str] = None
-    match_iteration_id: Optional[int] = None
+    match_iteration_name: str | None = None
+    program_contracts: str | None = None
+    general_instructions: str | None = None
+    supporting_documentation_information: str | None = None
+    review_process: str | None = None
+    interviews: str | None = None
+    selection_criteria: str | None = None
+    program_highlights: str | None = None
+    program_curriculum: str | None = None
+    training_sites: str | None = None
+    additional_information: str | None = None
+    return_of_service: str | None = None
+    faq: str | None = None
+    summary_of_changes: str | None = None
+    match_iteration_id: int | None = None
     program_description_id: int

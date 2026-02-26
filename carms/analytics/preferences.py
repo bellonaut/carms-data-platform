@@ -4,9 +4,9 @@ import json
 import math
 import os
 from collections import Counter, defaultdict
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 from sqlmodel import Session, select
@@ -14,7 +14,13 @@ from sqlmodel import Session, select
 from carms.models.gold import GoldProgramEmbedding
 from carms.models.silver import SilverProgram
 
-FEATURE_NAMES = ["discipline_freq", "province_mix", "stream_is_cmg", "stream_is_img", "embedding_similarity"]
+FEATURE_NAMES = [
+    "discipline_freq",
+    "province_mix",
+    "stream_is_cmg",
+    "stream_is_img",
+    "embedding_similarity",
+]
 MODEL_VERSION = "v1"
 REG_L2 = 0.1
 
@@ -35,17 +41,17 @@ class PreferenceFeatureRow:
     program_stream: str
     discipline_name: str
     province: str
-    features: Dict[str, float]
+    features: dict[str, float]
     label: float  # proxy target: normalized quota
 
 
 @dataclass
 class PreferenceModelArtifact:
     version: str
-    feature_names: List[str]
-    weights: List[float]
+    feature_names: list[str]
+    weights: list[float]
     intercept: float
-    feature_importances: Dict[str, float]
+    feature_importances: dict[str, float]
 
 
 @dataclass
@@ -57,12 +63,12 @@ class PreferenceScore:
     discipline_name: str
     province: str
     score: float
-    feature_values: Dict[str, float]
+    feature_values: dict[str, float]
     label_proxy: float
 
 
 def _cosine_similarity(a: Sequence[float], b: Sequence[float]) -> float:
-    dot = sum(x * y for x, y in zip(a, b))
+    dot = sum(x * y for x, y in zip(a, b, strict=False))
     norm_a = math.sqrt(sum(x * x for x in a))
     norm_b = math.sqrt(sum(y * y for y in b))
     if norm_a == 0 or norm_b == 0:
@@ -70,11 +76,11 @@ def _cosine_similarity(a: Sequence[float], b: Sequence[float]) -> float:
     return dot / (norm_a * norm_b)
 
 
-def _load_embeddings(session: Session) -> Tuple[Dict[int, List[float]], Dict[str, List[float]]]:
+def _load_embeddings(session: Session) -> tuple[dict[int, list[float]], dict[str, list[float]]]:
     """Return program embeddings and per-discipline centroids when available."""
     rows = session.exec(select(GoldProgramEmbedding)).all()
-    by_program: Dict[int, List[float]] = {}
-    by_discipline: Dict[str, List[List[float]]] = defaultdict(list)
+    by_program: dict[int, list[float]] = {}
+    by_discipline: dict[str, list[list[float]]] = defaultdict(list)
 
     for row in rows:
         if row.embedding is None:
@@ -83,7 +89,7 @@ def _load_embeddings(session: Session) -> Tuple[Dict[int, List[float]], Dict[str
         by_program[row.program_stream_id] = emb
         by_discipline[row.discipline_name].append(emb)
 
-    centroids: Dict[str, List[float]] = {}
+    centroids: dict[str, list[float]] = {}
     for disc, vectors in by_discipline.items():
         if not vectors:
             continue
@@ -94,20 +100,22 @@ def _load_embeddings(session: Session) -> Tuple[Dict[int, List[float]], Dict[str
     return by_program, centroids
 
 
-def build_feature_rows(session: Session) -> List[PreferenceFeatureRow]:
+def build_feature_rows(session: Session) -> list[PreferenceFeatureRow]:
     programs = session.exec(select(SilverProgram).where(SilverProgram.is_valid == True)).all()  # noqa: E712
     if not programs:
         return []
 
     total_programs = len(programs)
     discipline_counts = Counter(p.discipline_name for p in programs)
-    province_disc_counts = Counter(((p.province or "UNKNOWN").upper(), p.discipline_name) for p in programs)
+    province_disc_counts = Counter(
+        ((p.province or "UNKNOWN").upper(), p.discipline_name) for p in programs
+    )
     max_quota = max((p.quota for p in programs if p.quota is not None), default=None)
     max_quota = float(max_quota) if max_quota is not None else 1.0
 
     program_embeddings, discipline_centroids = _load_embeddings(session)
 
-    rows: List[PreferenceFeatureRow] = []
+    rows: list[PreferenceFeatureRow] = []
     for program in programs:
         province = (program.province or "UNKNOWN").upper()
         discipline = program.discipline_name
@@ -115,7 +123,8 @@ def build_feature_rows(session: Session) -> List[PreferenceFeatureRow]:
 
         features = {
             "discipline_freq": discipline_counts[discipline] / float(total_programs),
-            "province_mix": province_disc_counts[(province, discipline)] / float(discipline_counts[discipline]),
+            "province_mix": province_disc_counts[(province, discipline)]
+            / float(discipline_counts[discipline]),
             "stream_is_cmg": 1.0 if stream == "CMG" else 0.0,
             "stream_is_img": 1.0 if stream == "IMG" else 0.0,
             "embedding_similarity": 0.0,
@@ -145,7 +154,7 @@ def build_feature_rows(session: Session) -> List[PreferenceFeatureRow]:
     return rows
 
 
-def _ridge_regression(X: np.ndarray, y: np.ndarray, reg_lambda: float) -> Tuple[float, List[float]]:
+def _ridge_regression(X: np.ndarray, y: np.ndarray, reg_lambda: float) -> tuple[float, list[float]]:
     """Closed-form ridge regression to keep the model simple and interpretable."""
     X_design = np.hstack([np.ones((X.shape[0], 1)), X])
     eye = np.eye(X_design.shape[1])
@@ -170,7 +179,9 @@ def train_preference_model(session: Session, persist: bool = True) -> Preference
 
     abs_weights = [abs(w) for w in weights]
     total = sum(abs_weights) or 1.0
-    feature_importances = {name: abs(w) / total for name, w in zip(FEATURE_NAMES, weights)}
+    feature_importances = {
+        name: abs(w) / total for name, w in zip(FEATURE_NAMES, weights, strict=False)
+    }
 
     artifact = PreferenceModelArtifact(
         version=MODEL_VERSION,
@@ -188,7 +199,7 @@ def train_preference_model(session: Session, persist: bool = True) -> Preference
     return artifact
 
 
-def load_artifact(path: Optional[Path] = None) -> Optional[PreferenceModelArtifact]:
+def load_artifact(path: Path | None = None) -> PreferenceModelArtifact | None:
     target = path or get_artifact_path()
     if not target.exists():
         return None
@@ -212,9 +223,9 @@ def ensure_artifact(session: Session) -> PreferenceModelArtifact:
     return train_preference_model(session, persist=True)
 
 
-def _predict_score(features: Dict[str, float], artifact: PreferenceModelArtifact) -> float:
+def _predict_score(features: dict[str, float], artifact: PreferenceModelArtifact) -> float:
     raw = artifact.intercept
-    for name, weight in zip(artifact.feature_names, artifact.weights):
+    for name, weight in zip(artifact.feature_names, artifact.weights, strict=False):
         raw += weight * features.get(name, 0.0)
     return 1.0 / (1.0 + math.exp(-raw))
 
@@ -222,10 +233,10 @@ def _predict_score(features: Dict[str, float], artifact: PreferenceModelArtifact
 def score_slice(
     session: Session,
     artifact: PreferenceModelArtifact,
-    province: Optional[str] = None,
-    discipline: Optional[str] = None,
-    limit: Optional[int] = None,
-) -> List[PreferenceScore]:
+    province: str | None = None,
+    discipline: str | None = None,
+    limit: int | None = None,
+) -> list[PreferenceScore]:
     rows = build_feature_rows(session)
     filtered: Iterable[PreferenceFeatureRow] = rows
     if province:
@@ -234,7 +245,7 @@ def score_slice(
     if discipline:
         filtered = (r for r in filtered if discipline.lower() in r.discipline_name.lower())
 
-    scored: List[PreferenceScore] = []
+    scored: list[PreferenceScore] = []
     for row in filtered:
         score = _predict_score(row.features, artifact)
         scored.append(

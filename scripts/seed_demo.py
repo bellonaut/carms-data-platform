@@ -12,8 +12,8 @@ import argparse
 import os
 import random
 from collections import defaultdict
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Dict, Iterable, List, Tuple
 
 from sqlalchemy import delete
 from sqlmodel import Session, SQLModel, create_engine, select
@@ -21,7 +21,7 @@ from sqlmodel import Session, SQLModel, create_engine, select
 from carms.models.gold import GoldGeoSummary, GoldProgramProfile
 from carms.models.silver import SilverDiscipline
 
-PROVINCES: List[Tuple[str, str]] = [
+PROVINCES: list[tuple[str, str]] = [
     ("BC", "British Columbia"),
     ("AB", "Alberta"),
     ("SK", "Saskatchewan"),
@@ -37,7 +37,7 @@ PROVINCES: List[Tuple[str, str]] = [
     ("NU", "Nunavut"),
 ]
 
-DISCIPLINES: List[Tuple[int, str]] = [
+DISCIPLINES: list[tuple[int, str]] = [
     (100, "Internal Medicine"),
     (110, "Emergency Medicine"),
     (120, "Family Medicine"),
@@ -47,12 +47,17 @@ DISCIPLINES: List[Tuple[int, str]] = [
     (160, "Obstetrics & Gynecology"),
 ]
 
-SCHOOLS: Dict[str, List[str]] = {
+SCHOOLS: dict[str, list[str]] = {
     "BC": ["UBC Faculty of Medicine", "Victoria Island Health"],
     "AB": ["University of Alberta", "University of Calgary"],
     "SK": ["University of Saskatchewan"],
     "MB": ["University of Manitoba"],
-    "ON": ["University of Toronto", "McMaster University", "Western University", "Queen's University"],
+    "ON": [
+        "University of Toronto",
+        "McMaster University",
+        "Western University",
+        "Queen's University",
+    ],
     "QC": ["McGill University", "Universite de Montreal", "Universite Laval"],
     "NB": ["Dalhousie Medicine New Brunswick"],
     "NS": ["Dalhousie University"],
@@ -67,7 +72,7 @@ STREAMS = ["CMG", "IMG"]
 SITES = ["Main Campus", "Teaching Hospital", "Community Site"]
 
 
-def _connect_args_for_sqlite(db_url: str) -> Dict:
+def _connect_args_for_sqlite(db_url: str) -> dict:
     if not db_url.startswith("sqlite"):
         return {}
     # sqlite:///./demo.db -> ./demo.db
@@ -95,8 +100,8 @@ def _make_description(school: str, discipline: str, province: str, rng: random.R
     )
 
 
-def _generate_programs(rng: random.Random, rows: int) -> List[GoldProgramProfile]:
-    programs: List[GoldProgramProfile] = []
+def _generate_programs(rng: random.Random, rows: int) -> list[GoldProgramProfile]:
+    programs: list[GoldProgramProfile] = []
     next_id = 12000
 
     # Ensure every province gets at least one discipline represented
@@ -104,6 +109,7 @@ def _generate_programs(rng: random.Random, rows: int) -> List[GoldProgramProfile
         _, disc_name = rng.choice(DISCIPLINES)
         school = rng.choice(SCHOOLS.get(prov_code, [f"{prov_code} Medical Centre"]))
         stream = rng.choice(STREAMS)
+        discipline_slug = disc_name.lower().replace(" ", "-")
         next_id += 1
         programs.append(
             GoldProgramProfile(
@@ -115,7 +121,7 @@ def _generate_programs(rng: random.Random, rows: int) -> List[GoldProgramProfile
                 province=prov_code,
                 school_name=school,
                 program_site=rng.choice(SITES),
-                program_url=f"https://example.edu/{prov_code.lower()}/{disc_name.lower().replace(' ', '-')}",
+                program_url=f"https://example.edu/{prov_code.lower()}/{discipline_slug}",
                 description_text=_make_description(school, disc_name, prov_code, rng),
                 is_valid=True,
             )
@@ -127,6 +133,7 @@ def _generate_programs(rng: random.Random, rows: int) -> List[GoldProgramProfile
         prov_code, _ = rng.choice(PROVINCES)
         school = rng.choice(SCHOOLS.get(prov_code, [f"{prov_code} Medical Centre"]))
         stream = rng.choice(STREAMS)
+        discipline_slug = disc_name.lower().replace(" ", "-")
         next_id += 1
         programs.append(
             GoldProgramProfile(
@@ -138,7 +145,9 @@ def _generate_programs(rng: random.Random, rows: int) -> List[GoldProgramProfile
                 province=prov_code,
                 school_name=school,
                 program_site=rng.choice(SITES),
-                program_url=f"https://example.edu/{prov_code.lower()}/{disc_name.lower().replace(' ', '-')}-{stream.lower()}",
+                program_url=(
+                    f"https://example.edu/{prov_code.lower()}/{discipline_slug}-{stream.lower()}"
+                ),
                 description_text=_make_description(school, disc_name, prov_code, rng),
                 is_valid=True,
             )
@@ -147,13 +156,15 @@ def _generate_programs(rng: random.Random, rows: int) -> List[GoldProgramProfile
     return programs
 
 
-def _build_geo_summary(programs: Iterable[GoldProgramProfile], rng: random.Random) -> List[GoldGeoSummary]:
-    buckets: Dict[Tuple[str, str], List[int]] = defaultdict(list)
+def _build_geo_summary(
+    programs: Iterable[GoldProgramProfile], rng: random.Random
+) -> list[GoldGeoSummary]:
+    buckets: dict[tuple[str, str], list[int]] = defaultdict(list)
     for p in programs:
         quota = rng.randint(1, 12)
         buckets[(p.province, p.discipline_name)].append(quota)
 
-    summaries: List[GoldGeoSummary] = []
+    summaries: list[GoldGeoSummary] = []
     for (prov, disc), quotas in buckets.items():
         avg_quota = sum(quotas) / len(quotas)
         summaries.append(
@@ -173,11 +184,14 @@ def _seed_disciplines(session: Session) -> None:
     if existing:
         session.exec(delete(SilverDiscipline))
     session.add_all(
-        [SilverDiscipline(discipline_id=disc_id, discipline=name, province=None, is_valid=True) for disc_id, name in DISCIPLINES]
+        [
+            SilverDiscipline(discipline_id=disc_id, discipline=name, province=None, is_valid=True)
+            for disc_id, name in DISCIPLINES
+        ]
     )
 
 
-def seed(db_url: str, rows: int, seed: int, force: bool) -> Tuple[int, int]:
+def seed(db_url: str, rows: int, seed: int, force: bool) -> tuple[int, int]:
     connect_args = _connect_args_for_sqlite(db_url)
     engine = create_engine(db_url, echo=False, connect_args=connect_args)
 
@@ -207,9 +221,18 @@ def seed(db_url: str, rows: int, seed: int, force: bool) -> Tuple[int, int]:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Seed synthetic demo data for the UI-only run")
-    parser.add_argument("--db-url", dest="db_url", default=os.getenv("DB_URL", "sqlite:///./demo.db"), help="Database URL (default: env DB_URL or sqlite demo.db)")
-    parser.add_argument("--rows", dest="rows", type=int, default=70, help="Approx number of program rows to create")
-    parser.add_argument("--seed", dest="seed", type=int, default=42, help="Random seed for deterministic output")
+    parser.add_argument(
+        "--db-url",
+        dest="db_url",
+        default=os.getenv("DB_URL", "sqlite:///./demo.db"),
+        help="Database URL (default: env DB_URL or sqlite demo.db)",
+    )
+    parser.add_argument(
+        "--rows", dest="rows", type=int, default=70, help="Approx number of program rows to create"
+    )
+    parser.add_argument(
+        "--seed", dest="seed", type=int, default=42, help="Random seed for deterministic output"
+    )
     parser.add_argument("--force", action="store_true", help="Re-seed even if data already exists")
     return parser.parse_args()
 
@@ -220,7 +243,9 @@ def main() -> None:
     if created_programs == 0:
         print("Seed data already present; skipping (use --force to reseed).")
     else:
-        print(f"Seeded {created_programs} programs and {created_geo} geo aggregates -> {args.db_url}")
+        print(
+            f"Seeded {created_programs} programs and {created_geo} geo aggregates -> {args.db_url}"
+        )
 
 
 if __name__ == "__main__":

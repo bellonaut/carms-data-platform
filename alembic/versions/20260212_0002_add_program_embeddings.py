@@ -5,8 +5,9 @@ Revises: 20260211_0001
 Create Date: 2026-02-12 06:30:00.000000
 """
 
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
 
 try:  # pragma: no cover
     from pgvector.sqlalchemy import Vector
@@ -42,7 +43,9 @@ def upgrade() -> None:
     )
 
     op.create_index("ix_gold_program_embedding_province", "gold_program_embedding", ["province"])
-    op.create_index("ix_gold_program_embedding_discipline_name", "gold_program_embedding", ["discipline_name"])
+    op.create_index(
+        "ix_gold_program_embedding_discipline_name", "gold_program_embedding", ["discipline_name"]
+    )
 
     # Optional vector index to speed similarity search; ivfflat requires ANALYZE after load.
     if dialect == "postgresql":
@@ -57,7 +60,11 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index("ix_gold_program_embedding_embedding_cosine", table_name="gold_program_embedding", if_exists=True)
+    op.drop_index(
+        "ix_gold_program_embedding_embedding_cosine",
+        table_name="gold_program_embedding",
+        if_exists=True,
+    )
     op.drop_index("ix_gold_program_embedding_discipline_name", table_name="gold_program_embedding")
     op.drop_index("ix_gold_program_embedding_province", table_name="gold_program_embedding")
     op.drop_table("gold_program_embedding")

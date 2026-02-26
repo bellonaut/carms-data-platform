@@ -1,6 +1,5 @@
 from collections import defaultdict
 from functools import lru_cache
-from typing import Dict, List, Optional, Tuple
 
 from dagster import AssetIn, asset
 from sqlmodel import Session, delete, select
@@ -23,8 +22,8 @@ def _render_section_title(section_name: str) -> str:
     return section_name.replace("_", " ").title()
 
 
-def _aggregate_descriptions(sections: List[SilverDescriptionSection]) -> Dict[int, str]:
-    grouped: Dict[int, Dict[str, str]] = defaultdict(dict)
+def _aggregate_descriptions(sections: list[SilverDescriptionSection]) -> dict[int, str]:
+    grouped: dict[int, dict[str, str]] = defaultdict(dict)
     for section in sections:
         if not section.section_text:
             continue
@@ -32,11 +31,11 @@ def _aggregate_descriptions(sections: List[SilverDescriptionSection]) -> Dict[in
             continue
         grouped[section.program_description_id][section.section_name] = section.section_text
 
-    aggregated: Dict[int, str] = {}
+    aggregated: dict[int, str] = {}
     for program_description_id, section_map in grouped.items():
-        chunks: List[str] = []
+        chunks: list[str] = []
         for section_name in DESCRIPTION_SECTION_ORDER:
-            section_text: Optional[str] = section_map.get(section_name)
+            section_text: str | None = section_map.get(section_name)
             if not section_text:
                 continue
             chunks.append(f"## {_render_section_title(section_name)}\n{section_text}")
@@ -55,9 +54,7 @@ def _aggregate_descriptions(sections: List[SilverDescriptionSection]) -> Dict[in
         "silver_description_sections": AssetIn("silver_description_sections"),
     },
 )
-def gold_program_profiles(
-    silver_programs, silver_disciplines, silver_description_sections
-) -> int:  # type: ignore[unused-argument]
+def gold_program_profiles(silver_programs, silver_disciplines, silver_description_sections) -> int:  # type: ignore[unused-argument]
     with Session(engine) as session:
         programs = session.exec(select(SilverProgram)).all()
         sections = session.exec(select(SilverDescriptionSection)).all()
@@ -65,7 +62,7 @@ def gold_program_profiles(
         description_map = _aggregate_descriptions(sections)
 
         session.exec(delete(GoldProgramProfile))
-        gold_rows: List[GoldProgramProfile] = []
+        gold_rows: list[GoldProgramProfile] = []
         for program in programs:
             description_text = description_map.get(program.program_stream_id)
             gold_rows.append(
@@ -110,7 +107,7 @@ def gold_program_embeddings(gold_program_profiles) -> int:  # type: ignore[unuse
         profiles = session.exec(select(GoldProgramProfile)).all()
         session.exec(delete(GoldProgramEmbedding))
 
-        rows: List[GoldProgramEmbedding] = []
+        rows: list[GoldProgramEmbedding] = []
         for program in profiles:
             if not program.description_text:
                 # Skip empty descriptions; still allow querying profile table directly.
@@ -141,8 +138,8 @@ def gold_geo_summary(silver_programs) -> int:  # type: ignore[unused-argument]
     with Session(engine) as session:
         programs = session.exec(select(SilverProgram)).all()
 
-        rollups: Dict[Tuple[str, str], List[int]] = defaultdict(list)
-        program_counts: Dict[Tuple[str, str], int] = defaultdict(int)
+        rollups: dict[tuple[str, str], list[int]] = defaultdict(list)
+        program_counts: dict[tuple[str, str], int] = defaultdict(int)
         for program in programs:
             key = (program.province or "UNKNOWN", program.discipline_name)
             program_counts[key] += 1
@@ -150,7 +147,7 @@ def gold_geo_summary(silver_programs) -> int:  # type: ignore[unused-argument]
                 rollups[key].append(program.quota)
 
         session.exec(delete(GoldGeoSummary))
-        rows: List[GoldGeoSummary] = []
+        rows: list[GoldGeoSummary] = []
         for (province, discipline_name), count in program_counts.items():
             quotas = rollups.get((province, discipline_name), [])
             avg_quota = sum(quotas) / len(quotas) if quotas else None

@@ -1,12 +1,12 @@
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncIterator
+
+from alembic.config import Config
+from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, create_engine
 
 from alembic import command
-from alembic.config import Config
-from sqlmodel import Session, SQLModel, create_engine
-from sqlalchemy.pool import StaticPool
-
 from carms.core.config import Settings
 
 settings = Settings()
@@ -62,7 +62,7 @@ def init_db() -> None:
     """Initialize database schema using Alembic migrations."""
     # Import model modules so metadata stays discoverable for autogenerate workflows.
     import carms.models.bronze  # noqa: F401
-    import carms.models.silver  # noqa: F401
     import carms.models.gold  # noqa: F401
+    import carms.models.silver  # noqa: F401
 
     run_migrations()

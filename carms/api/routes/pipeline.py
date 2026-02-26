@@ -1,4 +1,4 @@
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Literal
 
 import httpx
 from fastapi import APIRouter, HTTPException
@@ -59,10 +59,10 @@ mutation LaunchRun($executionParams: ExecutionParams!) {
 class PipelineRunResponse(BaseModel):
     status: Literal["success", "error"]
     detail: str
-    run_id: Optional[str] = None
+    run_id: str | None = None
 
 
-async def _graphql_request(query: str, variables: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+async def _graphql_request(query: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(
             settings.dagster_graphql_url,
@@ -75,7 +75,7 @@ async def _graphql_request(query: str, variables: Optional[Dict[str, Any]] = Non
     return payload.get("data", {})
 
 
-def _resolve_job_selector(data: Dict[str, Any], job_name: str) -> Dict[str, str]:
+def _resolve_job_selector(data: dict[str, Any], job_name: str) -> dict[str, str]:
     repositories = data.get("repositoriesOrError", {})
     if repositories.get("__typename") != "RepositoryConnection":
         raise HTTPException(status_code=502, detail="Dagster repositories query failed")
@@ -124,4 +124,6 @@ async def run_pipeline() -> PipelineRunResponse:
             run_id=None,
         )
     except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"Unable to contact Dagster GraphQL: {exc}") from exc
+        raise HTTPException(
+            status_code=502, detail=f"Unable to contact Dagster GraphQL: {exc}"
+        ) from exc

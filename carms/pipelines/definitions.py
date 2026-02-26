@@ -1,11 +1,16 @@
-from dagster import Definitions, define_asset_job, load_asset_checks_from_modules, load_assets_from_modules
+from dagster import (
+    Definitions,
+    define_asset_job,
+    load_asset_checks_from_modules,
+    load_assets_from_modules,
+)
 
+from carms.analytics import assets as analytics_assets
 from carms.core.database import init_db
 from carms.pipelines import checks as asset_checks
 from carms.pipelines.bronze import assets as bronze_assets
 from carms.pipelines.gold import assets as gold_assets
 from carms.pipelines.silver import assets as silver_assets
-from carms.analytics import assets as analytics_assets
 
 # Ensure tables exist when Dagster starts
 init_db()

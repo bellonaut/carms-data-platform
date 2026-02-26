@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import math
 import os
+from collections.abc import Sequence
 from functools import lru_cache
-from typing import List, Optional, Sequence
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
@@ -25,7 +26,7 @@ def _get_model():
     return SentenceTransformer("all-MiniLM-L6-v2")
 
 
-def _maybe_generate_answer(question: str, hits: List[SemanticHit]) -> Optional[str]:
+def _maybe_generate_answer(question: str, hits: list[SemanticHit]) -> str | None:
     """
     Optional LangChain-backed summarization when OPENAI_API_KEY is present.
     Falls back to None when no key or library issues occur.
@@ -73,7 +74,7 @@ def _maybe_generate_answer(question: str, hits: List[SemanticHit]) -> Optional[s
 @router.post("/query", response_model=SemanticQueryResponse)
 def semantic_query(
     payload: SemanticQueryRequest,
-    session: Session = Depends(get_session),
+    session: Annotated[Session, Depends(get_session)],
 ) -> SemanticQueryResponse:
     if payload.top_k < 1 or payload.top_k > 20:
         raise HTTPException(status_code=422, detail="top_k must be between 1 and 20")
@@ -81,7 +82,7 @@ def semantic_query(
     model = _get_model()
     query_embedding = model.encode(payload.query, normalize_embeddings=True).tolist()
 
-    hits: List[SemanticHit] = []
+    hits: list[SemanticHit] = []
     dialect = session.get_bind().dialect.name
     if dialect == "postgresql":
         stmt = text(
@@ -127,8 +128,9 @@ def semantic_query(
                 )
             )
     else:
+
         def _cosine_similarity(a: Sequence[float], b: Sequence[float]) -> float:
-            dot = sum(x * y for x, y in zip(a, b))
+            dot = sum(x * y for x, y in zip(a, b, strict=False))
             norm_a = math.sqrt(sum(x * x for x in a))
             norm_b = math.sqrt(sum(y * y for y in b))
             if norm_a == 0 or norm_b == 0:
@@ -139,10 +141,12 @@ def semantic_query(
         if payload.province:
             query = query.where(GoldProgramEmbedding.province == payload.province)
         if payload.discipline:
-            query = query.where(GoldProgramEmbedding.discipline_name.ilike(f"%{payload.discipline}%"))
+            query = query.where(
+                GoldProgramEmbedding.discipline_name.ilike(f"%{payload.discipline}%")
+            )
 
         rows = session.exec(query).all()
-        scored: List[tuple[float, GoldProgramEmbedding]] = []
+        scored: list[tuple[float, GoldProgramEmbedding]] = []
         for row in rows:
             score = _cosine_similarity(query_embedding, row.embedding or [])
             scored.append((score, row))

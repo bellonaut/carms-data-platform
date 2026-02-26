@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from collections import defaultdict
 from time import monotonic
-from typing import DefaultDict, List
+from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, status
 
@@ -16,12 +16,12 @@ def get_settings() -> Settings:
 
 
 _rate_lock = asyncio.Lock()
-_request_times: DefaultDict[str, List[float]] = defaultdict(list)
+_request_times: defaultdict[str, list[float]] = defaultdict(list)
 
 
 async def rate_limit(
     request: Request,
-    settings: Settings = Depends(get_settings),
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> None:
     """
     Simple sliding-window rate limiter.
@@ -54,7 +54,7 @@ async def rate_limit(
 
 async def require_api_key(
     request: Request,
-    settings: Settings = Depends(get_settings),
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> None:
     """
     Optional API key guard.

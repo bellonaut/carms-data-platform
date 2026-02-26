@@ -1,14 +1,13 @@
 from logging.config import fileConfig
 
-from alembic import context
-from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 
+import carms.models.bronze  # noqa: F401
+import carms.models.gold  # noqa: F401
+import carms.models.silver  # noqa: F401
+from alembic import context
 from carms.core.config import Settings
 from carms.core.database import engine
-import carms.models.bronze  # noqa: F401
-import carms.models.silver  # noqa: F401
-import carms.models.gold  # noqa: F401
 
 # Alembic Config object
 config = context.config

@@ -1,5 +1,3 @@
-from typing import List
-
 from dagster import AssetIn, asset
 from sqlalchemy import func
 from sqlmodel import Session, delete, select
@@ -9,7 +7,7 @@ from carms.analytics.simulation import SimulationParams, run_simulation
 from carms.core.database import engine
 from carms.models.gold import GoldMatchScenario
 
-DEFAULT_SCENARIOS: List[SimulationParams] = [
+DEFAULT_SCENARIOS: list[SimulationParams] = [
     SimulationParams(scenario_type="baseline", scenario_label="Baseline demand/supply"),
     SimulationParams(
         scenario_type="quota_shock",
@@ -40,5 +38,5 @@ def gold_match_scenarios(silver_programs) -> int:  # type: ignore[unused-argumen
 @asset(group_name="analytics", ins={"silver_programs": AssetIn("silver_programs")})
 def preference_model(silver_programs) -> str:  # type: ignore[unused-argument]
     with Session(engine) as session:
-        artifact = preferences.train_preference_model(session, persist=True)
+        preferences.train_preference_model(session, persist=True)
         return str(preferences.get_artifact_path())

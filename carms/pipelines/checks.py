@@ -19,7 +19,22 @@ def silver_programs_not_empty() -> AssetCheckResult:
 
 @asset_check(asset="silver_programs", name="silver_programs_valid_province")
 def silver_programs_valid_province() -> AssetCheckResult:
-    allowed = {"NL", "PE", "NS", "NB", "QC", "ON", "MB", "SK", "AB", "BC", "YT", "NT", "NU", "UNKNOWN"}
+    allowed = {
+        "NL",
+        "PE",
+        "NS",
+        "NB",
+        "QC",
+        "ON",
+        "MB",
+        "SK",
+        "AB",
+        "BC",
+        "YT",
+        "NT",
+        "NU",
+        "UNKNOWN",
+    }
     with Session(engine) as session:
         rows = session.exec(select(SilverProgram.province)).all()
     invalid = [p for p in rows if p not in allowed]

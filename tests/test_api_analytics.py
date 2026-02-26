@@ -53,7 +53,11 @@ def test_simulate_endpoint_happy_path(tmp_path):
     body = resp.json()
     assert "scenario_id" in body
     assert body["results"]
-    assert body["results"][0]["fill_rate_p05"] <= body["results"][0]["fill_rate_mean"] <= body["results"][0]["fill_rate_p95"]
+    assert (
+        body["results"][0]["fill_rate_p05"]
+        <= body["results"][0]["fill_rate_mean"]
+        <= body["results"][0]["fill_rate_p95"]
+    )
 
 
 def test_simulate_endpoint_validation(tmp_path):
