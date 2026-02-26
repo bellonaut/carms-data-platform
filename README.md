@@ -47,7 +47,7 @@ RAG-style grounded response on semantic queries
 ## Quickstart
 
 ```bash
-git clone <repo-url> && cd Junior-Data-Scientist-main
+git clone <repo-url> && cd carms-data-platform
 cp .env.example .env
 make dev
 ```
